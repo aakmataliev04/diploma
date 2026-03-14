@@ -1,6 +1,6 @@
 
 import './App.css';
-import MainPage from "./containers/MainPage/MainPage.tsx";
+import MainPage from "./containers/MainPage/MainPage";
 
 const App = () => {
     return (

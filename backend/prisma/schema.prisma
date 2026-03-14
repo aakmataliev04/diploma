@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+// сотрудники (флористы и Владелец)
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  pin       String   @unique // хэшированный smart пин-код для входа
+  role      String   @default("FLORIST") // Роли: ADMIN или FLORIST
+  createdAt DateTime @default(now())
+}
+
+// клиенты магазина (для программы лояльности)
+model Client {
+  id          Int      @id @default(autoincrement())
+  name        String
+  phone       String   @unique
+  birthDate   DateTime?
+  ordersCount Int      @default(0) // считаем заказы для системы лояльности
+  orders      Order[]
+  createdAt   DateTime @default(now())
+}
+
+// склад (цветы, упаковка, ленты)
+model Item {
+  id          Int         @id @default(autoincrement())
+  name        String
+  category    String      // 'FLOWER' или 'PACKAGING'
+  quantity    Int         @default(0) // остаток на складе
+  price       Int         // цена за 1 штуку
+
+  // связь: в каких пунктах заказов есть этот товар
+  orderItems  OrderItem[]
+}
+
+// заказы
+model Order {
+  id          Int         @id @default(autoincrement())
+  totalPrice  Int
+  source      String      // 'INSTAGRAM', 'WHATSAPP', '2GIS', 'WALK_IN'
+  status      String      @default("COMPLETED") // 'PENDING', 'COMPLETED', 'CANCELLED'
+
+  clientId    Int?        // ссылка на клиента (может быть пустым)
+  client      Client?     @relation(fields: [clientId], references: [id])
+
+  // состав заказа (цветы, лента, открытка)
+  items       OrderItem[]
+
+  createdAt   DateTime    @default(now())
+}
+
+// состав заказа (промежуточная таблица для списания со склада)
+model OrderItem {
+  id        Int   @id @default(autoincrement())
+
+  orderId   Int
+  order     Order @relation(fields: [orderId], references: [id])
+
+  itemId    Int
+  item      Item  @relation(fields: [itemId], references: [id])
+
+  quantity  Int   // ( 15 роз )
+  priceAtSale Int // фёфиксируем цену на момент продажи (чтобы отчеты не плыли при изменении цен в будущем)
+}
