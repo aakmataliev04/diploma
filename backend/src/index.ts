@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import prisma from './db';
+import authRoutes from './routes/auth';
 
 dotenv.config();
 
@@ -10,8 +11,8 @@ const port = process.env.PORT || 5001;
 
 app.use(cors());
 app.use(express.json());
+app.use('/api/auth', authRoutes);
 
-//роут проверки статуса api
 app.get('/api/status', async (req: Request, res: Response) => {
     try {
         //запрос в базу данных Neon
@@ -20,7 +21,7 @@ app.get('/api/status', async (req: Request, res: Response) => {
         res.json({
             status: 'OK',
             message: 'Сервер работает, связь с базой данных установлена!',
-            usersInDatabase: usersCount // Должно показать 1
+            usersInDatabase: usersCount
         });
     } catch (error) {
         console.error('Ошибка БД:', error);
