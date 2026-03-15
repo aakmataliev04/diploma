@@ -1,0 +1,120 @@
+PUT http://localhost:5001/api/inventory/1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzczNTY3MTc0LCJleHAiOjE3NzM2MTAzNzR9.x77b_hisEOTYJJzeNOnn6bhWN0BHk7gvuTUe5rWcOT0
+Content-Length: 36
+User-Agent: IntelliJ HTTP Client/WebStorm 2024.1.5
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+{
+  "price": 200,
+  "quantity": 90
+}
+
+<> 2026-03-15T155355.200.json
+
+###
+
+PUT http://localhost:5001/api/inventory/1
+Content-Type: application/json
+Authorization: Bearer <eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzczNTY3MTc0LCJleHAiOjE3NzM2MTAzNzR9.x77b_hisEOTYJJzeNOnn6bhWN0BHk7gvuTUe5rWcOT0>
+Content-Length: 36
+User-Agent: IntelliJ HTTP Client/WebStorm 2024.1.5
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+{
+  "price": 200,
+  "quantity": 90
+}
+
+<> 2026-03-15T155242.403.json
+
+###
+
+PUT http://localhost:5001/api/inventory/1
+Content-Type: application/json
+Authorization: Bearer <eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzczNTY3MTc0LCJleHAiOjE3NzM2MTAzNzR9.x77b_hisEOTYJJzeNOnn6bhWN0BHk7gvuTUe5rWcOT0>
+Content-Length: 36
+User-Agent: IntelliJ HTTP Client/WebStorm 2024.1.5
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+{
+  "price": 200,
+  "quantity": 90
+}
+
+<> 2026-03-15T155148.403.json
+
+###
+
+PUT http://localhost:5001/api/inventory/1
+Content-Type: application/json
+Authorization: Bearer <ВСТАВЬ_СЮДА_СВОЙ_РАБОЧИЙ_ТОКЕН>
+Content-Length: 36
+User-Agent: IntelliJ HTTP Client/WebStorm 2024.1.5
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+{
+  "price": 200,
+  "quantity": 90
+}
+
+<> 2026-03-15T155121.403.json
+
+###
+
+POST http://localhost:5001/api/auth/login
+Content-Type: application/json
+Content-Length: 23
+User-Agent: IntelliJ HTTP Client/WebStorm 2024.1.5
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+{
+  "pin": "12345678"
+}
+
+<> 2026-03-15T153254.200.json
+
+###
+
+GET http://localhost:5001/api/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzczNTI1OTc1LCJleHAiOjE3NzM1NjkxNzV9.BWOYLZ5CRFkBWl1v0HaP77KjCDd9xk43lDC93fqukQA
+User-Agent: IntelliJ HTTP Client/WebStorm 2024.1.5
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+content-length: 0
+
+<> 2026-03-15T144810.200.json
+
+###
+
+GET http://localhost:5001/api/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzczNTI1OTc1LCJleHAiOjE3NzM1NjkxNzV9.BWOYLZ5CRFkBWl1v0HaP77KjCDd9xk43lDC93fqukQA
+User-Agent: IntelliJ HTTP Client/WebStorm 2024.1.5
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+content-length: 0
+
+<> 2026-03-15T045058.200.json
+
+###
+
+POST http://localhost:5001/api/auth/login
+Content-Type: application/json
+Content-Length: 23
+User-Agent: IntelliJ HTTP Client/WebStorm 2024.1.5
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+{
+  "pin": "12345678"
+}
+
+<> 2026-03-15T040615.200.json
+
+###
+
