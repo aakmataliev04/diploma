@@ -1,0 +1,28 @@
+### Создание нового клиента с поводами
+POST http://localhost:5001/api/clients
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzczNTY3MTc0LCJleHAiOjE3NzM2MTAzNzR9.x77b_hisEOTYJJzeNOnn6bhWN0BHk7gvuTUe5rWcOT0
+
+{
+  "phone": "+996778144144",
+  "name": "Расул",
+  "events": [
+    {
+      "title": "День рождения мамы",
+      "date": "2026-03-24T00:00:00.000Z"
+    }
+  ]
+}
+### Получение списка всех клиентов
+#GET http://localhost:5001/api/clients
+#Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzczNjE3MDE2LCJleHAiOjE3NzM2NjAyMTZ9.-XXmF5fhVtUBNCXwhn4dt7AznkX2oebpMb0-QuAOHik
+
+### Добавление повода существующему клиенту
+POST http://localhost:5001/api/clients/1/events
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzczNjE3MDE2LCJleHAiOjE3NzM2NjAyMTZ9.-XXmF5fhVtUBNCXwhn4dt7AznkX2oebpMb0-QuAOHik
+
+{
+  "title": "Годовщина свадьбы",
+  "date": "2026-09-20T00:00:00.000Z"
+}

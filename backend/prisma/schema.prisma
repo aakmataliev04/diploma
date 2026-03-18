@@ -18,14 +18,28 @@ model User {
 
 // клиенты магазина (для программы лояльности)
 model Client {
-  id          Int      @id @default(autoincrement())
-  name        String
-  phone       String   @unique
-  birthDate   DateTime?
-  ordersCount Int      @default(0) // считаем заказы для системы лояльности
+  id          Int           @id @default(autoincrement())
+  name        String?       // необязательно
+  phone       String        @unique
+  ordersCount Int           @default(0) // считаем заказы для системы лояльности
+
   orders      Order[]
-  createdAt   DateTime @default(now())
+  events      ClientEvent[]
+
+  createdAt   DateTime      @default(now())
 }
+
+// Поводы для покупки (Дни рождения близких, годовщины)
+model ClientEvent {
+  id          Int      @id @default(autoincrement())
+  title       String   // "День рождения мамы", "Годовщина"
+  date        DateTime
+
+  clientId    Int
+  client      Client   @relation(fields: [clientId], references: [id])
+}
+
+
 
 // склад (цветы, упаковка, ленты)
 model Item {

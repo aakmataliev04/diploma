@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import prisma from './db';
 import authRoutes from './routes/auth';
 import inventoryRoutes from './routes/inventory';
+import clientRoutes from './routes/clients';
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/clients', clientRoutes);
 
 app.get('/api/status', async (req: Request, res: Response) => {
     try {

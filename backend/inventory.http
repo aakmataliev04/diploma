@@ -1,0 +1,10 @@
+### Обновление данных цветка (ID = 1)
+PUT http://localhost:5001/api/inventory/1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzczNTY3MTc0LCJleHAiOjE3NzM2MTAzNzR9.x77b_hisEOTYJJzeNOnn6bhWN0BHk7gvuTUe5rWcOT0
+
+{
+  "price": 200,
+  "quantity": 90
+}
+

@@ -1,0 +1,7 @@
+### Проверка логина с правильным ПИН-кодом Администратора
+POST http://localhost:5001/api/auth/login
+Content-Type: application/json
+
+{
+  "pin": "12345678"
+}
