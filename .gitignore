@@ -1,3 +1,6 @@
+.idea/
+*.http
+
 node_modules/
 backend/node_modules/
 CRM-proj/node_modules/

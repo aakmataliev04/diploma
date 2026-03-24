@@ -1,9 +1,0 @@
-{
-  "message": "Вход выполнен успешно",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzczNTI1OTc1LCJleHAiOjE3NzM1NjkxNzV9.BWOYLZ5CRFkBWl1v0HaP77KjCDd9xk43lDC93fqukQA",
-  "user": {
-    "id": 1,
-    "name": "Атабек",
-    "role": "ADMIN"
-  }
-}

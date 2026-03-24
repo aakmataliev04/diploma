@@ -1,3 +1,0 @@
-### Запрос профиля С действующим токеном
-GET http://localhost:5001/api/auth/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzczNTI1OTc1LCJleHAiOjE3NzM1NjkxNzV9.BWOYLZ5CRFkBWl1v0HaP77KjCDd9xk43lDC93fqukQA

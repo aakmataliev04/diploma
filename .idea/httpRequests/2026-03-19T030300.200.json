@@ -1,9 +1,0 @@
-{
-  "message": "Вход выполнен успешно",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IkZMT1JJU1QiLCJpYXQiOjE3NzM4Njc3ODAsImV4cCI6MTc3MzkxMDk4MH0.jcgvGZx7V5IV-8Y21odEf1__xW2hxRrhC7ulF4jGSlc",
-  "user": {
-    "id": 3,
-    "name": "Flora",
-    "role": "FLORIST"
-  }
-}
