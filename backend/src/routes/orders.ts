@@ -20,8 +20,10 @@ router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<v
         // запускаем транзакцию
         const result = await prisma.$transaction(async (tx) => {
             let resolvedClientId: number | null = null;
+            let isBonusOrder = false;
+            let discountAmount = 0; // сумма нашей скидки
 
-            // ищем или создаем клиента по номеру телефона
+            // ищем или создаем клиента
             if (phone) {
                 const client = await tx.client.upsert({
                     where: { phone: String(phone) },
@@ -29,6 +31,24 @@ router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<v
                     create: { phone: String(phone), ordersCount: 1 }
                 });
                 resolvedClientId = client.id;
+
+                // смена условий акции, то замена числа в условии и замена числа в take
+                if (client.ordersCount > 0 && client.ordersCount % 7 === 0) {
+                    isBonusOrder = true;
+
+                    // вытаскиваем последние 6 заказов этого клиента
+                    const lastOrders = await tx.order.findMany({
+                        where: { clientId: resolvedClientId },
+                        orderBy: { createdAt: 'desc' }, // Сортируем от новых к старым
+                        take: 6 // Берем ровно 6 штук
+                    });
+
+                    // сумма 6 заказов
+                    const sumOfLastOrders = lastOrders.reduce((sum, order) => sum + order.totalPrice, 0);
+
+                    // среднее арифметическое
+                    discountAmount = sumOfLastOrders / 6;
+                }
             }
 
             let calculatedTotalPrice = 0;
@@ -60,6 +80,11 @@ router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<v
                 });
             }
 
+            // минусуем среднюю стоимость, Math.max, чтобы цена не ушла в минус, если букет дешевле
+            if (isBonusOrder) {
+                calculatedTotalPrice = Math.max(0, calculatedTotalPrice - discountAmount);
+            }
+
             // создаем заказ в базе
             const newOrder = await tx.order.create({
                 data: {
@@ -75,11 +100,15 @@ router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<v
                 }
             });
 
-            return newOrder;
+            return {
+                ...newOrder,
+                isBonusOrder,
+                discountAmount: isBonusOrder ? discountAmount : 0
+            };
         });
 
         res.status(201).json({
-            message: 'Заказ успешно оформлен',
+            message: result.isBonusOrder ? 'Применена скидка за 7-й заказ!' : 'Заказ успешно оформлен',
             order: result
         });
 

@@ -89,7 +89,35 @@ router.put('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise
     }
 });
 
+// /api/inventory/:id/add-stock пополнении цветов
+router.patch('/:id/add-stock', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { addedQuantity } = req.body;
 
+        if (!addedQuantity || addedQuantity <= 0) {
+            res.status(400).json({ error: 'Укажите корректное количество для пополнения' });
+            return;
+        }
+
+        // обновляем товар, прибавляя количество
+        const updatedItem = await prisma.item.update({
+            where: { id: Number(id) },
+            data: {
+                quantity: { increment: Number(addedQuantity) }
+            }
+        });
+
+        res.status(200).json({
+            message: `Склад успешно пополнен. Текущий остаток: ${updatedItem.quantity}`,
+            item: updatedItem
+        });
+
+    } catch (error: any) {
+        console.error('Ошибка при пополнении склада:', error);
+        res.status(400).json({ error: 'Не удалось пополнить склад. Проверьте ID товара.' });
+    }
+});
 
 // /api/inventory/:id удаление товар со склада
 router.delete('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
