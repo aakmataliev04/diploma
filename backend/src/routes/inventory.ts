@@ -4,71 +4,56 @@ import { verifyToken, AuthRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// /api/inventory добавление товара на склад
+// ОБЫЧНЫЕ ТОВАРЫ (РОЗЫ, ЛЕНТЫ И Т.Д.)
+
+// Добавление товара на склад
 router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        // данные из запроса
-        const { name, category, quantity, price } = req.body;
+        const { name, category, quantity, price, costPrice } = req.body;
 
-        // проверяем, что ни одно поле не забыто
-        if (!name || !category || quantity === undefined || price === undefined) {
-            res.status(400).json({ error: 'Пожалуйста, заполните все поля: name, category, quantity, price' });
+        if (!name || !category || quantity === undefined || price === undefined || costPrice === undefined) {
+            res.status(400).json({ error: 'Заполните все поля: name, category, quantity, price, costPrice' });
             return;
         }
 
-        // заполняем обьект и отправляем в бд
         const newItem = await prisma.item.create({
             data: {
                 name: String(name),
-                category: String(category), // 'FLOWER' или 'PACKAGING'
+                category: String(category),
                 quantity: Number(quantity),
-                price: Number(price)
+                price: Number(price),
+                costPrice: Number(costPrice) // Сохраняем закупку
             }
         });
 
-        res.status(201).json({
-            message: 'Товар успешно добавлен на склад',
-            item: newItem
-        });
+        res.status(201).json({ message: 'Товар успешно добавлен', item: newItem });
     } catch (error) {
-        console.error('Ошибка склада:', error);
         res.status(500).json({ error: 'Ошибка сервера при добавлении товара' });
     }
 });
 
-
-// /api/inventory запрос списка товаров со склада
+// Список всех товаров
 router.get('/', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        // достаем все обьекты из Item
-        const items = await prisma.item.findMany({
-            orderBy: { id: 'desc' } // сорт по дате добавления
-        });
-
+        const items = await prisma.item.findMany({ orderBy: { id: 'desc' } });
         res.json(items);
     } catch (error) {
-        console.error('Ошибка при получении склада:', error);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
     }
 });
 
-// /api/inventory/:id - изменение данных обьекта через пут реквест
+// Изменение товара
 router.put('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { id } = req.params; // достаем id из URL
-        const { name, category, quantity, price } = req.body;
+        const { id } = req.params;
+        const { name, category, quantity, price, costPrice } = req.body;
 
-        //  проверяем, есть ли такой товар в базе
-        const existingItem = await prisma.item.findUnique({
-            where: { id: Number(id) }
-        });
-
+        const existingItem = await prisma.item.findUnique({ where: { id: Number(id) } });
         if (!existingItem) {
-            res.status(404).json({ error: 'Товар с таким ID не найден' });
+            res.status(404).json({ error: 'Товар не найден' });
             return;
         }
 
-        // обновляем данные
         const updatedItem = await prisma.item.update({
             where: { id: Number(id) },
             data: {
@@ -76,73 +61,92 @@ router.put('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise
                 category: category !== undefined ? String(category) : existingItem.category,
                 quantity: quantity !== undefined ? Number(quantity) : existingItem.quantity,
                 price: price !== undefined ? Number(price) : existingItem.price,
+                costPrice: costPrice !== undefined ? Number(costPrice) : existingItem.costPrice,
             }
         });
 
-        res.json({
-            message: 'Данные товара успешно обновлены',
-            item: updatedItem
-        });
+        res.json({ message: 'Данные обновлены', item: updatedItem });
     } catch (error) {
-        console.error('Ошибка при обновлении товара:', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: 'Ошибка при обновлении' });
     }
 });
 
-// /api/inventory/:id/add-stock пополнении цветов
+// Пополнение склада (PATCH)
 router.patch('/:id/add-stock', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
         const { addedQuantity } = req.body;
 
-        if (!addedQuantity || addedQuantity <= 0) {
-            res.status(400).json({ error: 'Укажите корректное количество для пополнения' });
-            return;
-        }
-
-        // обновляем товар, прибавляя количество
         const updatedItem = await prisma.item.update({
             where: { id: Number(id) },
-            data: {
-                quantity: { increment: Number(addedQuantity) }
-            }
+            data: { quantity: { increment: Number(addedQuantity) } }
         });
 
-        res.status(200).json({
-            message: `Склад успешно пополнен. Текущий остаток: ${updatedItem.quantity}`,
-            item: updatedItem
-        });
-
-    } catch (error: any) {
-        console.error('Ошибка при пополнении склада:', error);
-        res.status(400).json({ error: 'Не удалось пополнить склад. Проверьте ID товара.' });
+        res.json({ message: 'Склад пополнен', item: updatedItem });
+    } catch (error) {
+        res.status(400).json({ error: 'Ошибка при пополнении' });
     }
 });
 
-// /api/inventory/:id удаление товар со склада
+// Удаление товара
 router.delete('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
+        await prisma.item.delete({ where: { id: Number(id) } });
+        res.json({ message: 'Товар удален' });
+    } catch (error) {
+        res.status(500).json({ error: 'Ошибка при удалении' });
+    }
+});
 
-        // есть ли что удалять
-        const existingItem = await prisma.item.findUnique({
-            where: { id: Number(id) }
-        });
 
-        if (!existingItem) {
-            res.status(404).json({ error: 'Товар с таким ID не найден' });
+// ШАБЛОНЫ БУКЕТОВ
+
+// Создать шаблон букета (рецепт)
+router.post('/templates', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { name, price, ingredients } = req.body;
+        // Ожидаем ingredients: [{ itemId: 1, quantity: 5 }]
+
+        if (!name || !price || !ingredients || !Array.isArray(ingredients)) {
+            res.status(400).json({ error: 'Укажите название, цену и массив ингредиентов' });
             return;
         }
 
-        // удаляем обьект из бд
-        await prisma.item.delete({
-            where: { id: Number(id) }
+        const newTemplate = await prisma.bouquetTemplate.create({
+            data: {
+                name: String(name),
+                price: Number(price),
+                ingredients: {
+                    create: ingredients.map((ing: any) => ({
+                        itemId: Number(ing.itemId),
+                        quantity: Number(ing.quantity)
+                    }))
+                }
+            },
+            include: { ingredients: true }
         });
 
-        res.json({ message: 'Товар успешно удален со склада' });
+        res.status(201).json({ message: 'Шаблон букета создан', template: newTemplate });
     } catch (error) {
-        console.error('Ошибка при удалении товара:', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        console.error(error);
+        res.status(500).json({ error: 'Ошибка при создании шаблона' });
+    }
+});
+
+// Получить все шаблоны букетов с их составом
+router.get('/templates', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const templates = await prisma.bouquetTemplate.findMany({
+            include: {
+                ingredients: {
+                    include: { item: true } // Видим, какие именно цветы в составе
+                }
+            }
+        });
+        res.json(templates);
+    } catch (error) {
+        res.status(500).json({ error: 'Ошибка при получении шаблонов' });
     }
 });
 

@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express';
-import  prisma  from '../db';
+import prisma from '../db';
 import { verifyToken } from '../middlewares/authMiddleware';
 
-// расширяем тип Request, если есть AuthRequest
 interface AuthRequest extends Request {
     user?: {
         id: number;
@@ -12,49 +11,59 @@ interface AuthRequest extends Request {
 
 const router = Router();
 
-
 router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { phone, source, items } = req.body;
 
-        // запускаем транзакцию
+        const { phone, name, source, items = [], bouquets = [], event } = req.body;
+
         const result = await prisma.$transaction(async (tx) => {
             let resolvedClientId: number | null = null;
             let isBonusOrder = false;
-            let discountAmount = 0; // сумма нашей скидки
+            let discountAmount = 0;
 
-            // ищем или создаем клиента
             if (phone) {
                 const client = await tx.client.upsert({
                     where: { phone: String(phone) },
-                    update: { ordersCount: { increment: 1 } },
-                    create: { phone: String(phone), ordersCount: 1 }
+                    update: {
+                        ordersCount: { increment: 1 },
+                        name: name ? String(name) : undefined
+                    },
+                    create: {
+                        phone: String(phone),
+                        ordersCount: 1,
+                        name: name ? String(name) : null
+                    }
                 });
                 resolvedClientId = client.id;
 
-                // смена условий акции, то замена числа в условии и замена числа в take
+                // НОВОЕ: Если переданы данные события, сохраняем его в привязке к клиенту
+                if (event && event.title && event.date) {
+                    await tx.clientEvent.create({
+                        data: {
+                            title: String(event.title),
+                            date: new Date(event.date), // Prisma сама распарсит строку в DateTime
+                            clientId: resolvedClientId
+                        }
+                    });
+                }
+
                 if (client.ordersCount > 0 && client.ordersCount % 7 === 0) {
                     isBonusOrder = true;
-
-                    // вытаскиваем последние 6 заказов этого клиента
                     const lastOrders = await tx.order.findMany({
                         where: { clientId: resolvedClientId },
-                        orderBy: { createdAt: 'desc' }, // Сортируем от новых к старым
-                        take: 6 // Берем ровно 6 штук
+                        orderBy: { createdAt: 'desc' },
+                        take: 6
                     });
-
-                    // сумма 6 заказов
                     const sumOfLastOrders = lastOrders.reduce((sum, order) => sum + order.totalPrice, 0);
-
-                    // среднее арифметическое
                     discountAmount = sumOfLastOrders / 6;
                 }
             }
 
             let calculatedTotalPrice = 0;
             const orderItemsData = [];
+            const orderBouquetsData = [];
 
-            // проверяем наличие товаров на складе
+            // обработка ПОШТУЧНЫХ товаров
             for (const reqItem of items) {
                 const item = await tx.item.findUnique({ where: { id: reqItem.itemId } });
 
@@ -73,30 +82,64 @@ router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<v
                     priceAtSale: item.price
                 });
 
-                //  списываем товар со склада
                 await tx.item.update({
                     where: { id: item.id },
                     data: { quantity: { decrement: reqItem.quantity } }
                 });
             }
 
-            // минусуем среднюю стоимость, Math.max, чтобы цена не ушла в минус, если букет дешевле
+            // обработка ГОТОВЫХ БУКЕТОВ (распаковка рецептов)
+            for (const reqBouquet of bouquets) {
+                const template = await tx.bouquetTemplate.findUnique({
+                    where: { id: reqBouquet.bouquetTemplateId },
+                    include: { ingredients: true }
+                });
+
+                if (!template) {
+                    throw new Error(`Шаблон букета с ID ${reqBouquet.bouquetTemplateId} не найден`);
+                }
+
+                calculatedTotalPrice += template.price * reqBouquet.quantity;
+
+                orderBouquetsData.push({
+                    bouquetTemplateId: template.id,
+                    quantity: reqBouquet.quantity,
+                    priceAtSale: template.price
+                });
+
+                for (const ingredient of template.ingredients) {
+                    const requiredQty = ingredient.quantity * reqBouquet.quantity;
+                    const item = await tx.item.findUnique({ where: { id: ingredient.itemId } });
+
+                    if (!item) {
+                        throw new Error(`Ингредиент с ID ${ingredient.itemId} не найден`);
+                    }
+                    if (item.quantity < requiredQty) {
+                        throw new Error(`Не хватает сырья для букета: ${item.name}`);
+                    }
+
+                    await tx.item.update({
+                        where: { id: item.id },
+                        data: { quantity: { decrement: requiredQty } }
+                    });
+                }
+            }
+
             if (isBonusOrder) {
                 calculatedTotalPrice = Math.max(0, calculatedTotalPrice - discountAmount);
             }
 
-            // создаем заказ в базе
             const newOrder = await tx.order.create({
                 data: {
-                    totalPrice: calculatedTotalPrice,
+                    totalPrice: Math.round(calculatedTotalPrice),
                     source: String(source),
                     clientId: resolvedClientId,
-                    items: {
-                        create: orderItemsData
-                    }
+                    items: orderItemsData.length > 0 ? { create: orderItemsData } : undefined,
+                    bouquets: orderBouquetsData.length > 0 ? { create: orderBouquetsData } : undefined
                 },
                 include: {
-                    items: true
+                    items: true,
+                    bouquets: true
                 }
             });
 
@@ -105,6 +148,9 @@ router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<v
                 isBonusOrder,
                 discountAmount: isBonusOrder ? discountAmount : 0
             };
+        }, {
+            maxWait: 5000,
+            timeout: 10000
         });
 
         res.status(201).json({

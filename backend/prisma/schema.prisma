@@ -6,7 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-
 // сотрудники (флористы и Владелец)
 model User {
   id        Int      @id @default(autoincrement())
@@ -21,7 +20,7 @@ model Client {
   id          Int           @id @default(autoincrement())
   name        String?       // необязательно
   phone       String        @unique
-  ordersCount Int           @default(0) // считаем заказы для системы лояльности
+  ordersCount Int           @default(0) // заказы для системы лояльности
 
   orders      Order[]
   events      ClientEvent[]
@@ -39,18 +38,40 @@ model ClientEvent {
   client      Client   @relation(fields: [clientId], references: [id])
 }
 
-
-
-// склад (цветы, упаковка, ленты)
+// склад (цветы, упаковка, ленты, услуги)
 model Item {
   id          Int         @id @default(autoincrement())
   name        String
-  category    String      // 'FLOWER' или 'PACKAGING'
-  quantity    Int         @default(0) // остаток на складе
-  price       Int         // цена за 1 штуку
+  category    String      // 'FLOWER', 'PACKAGING', 'SERVICE'
+  quantity    Int         @default(0)
+  costPrice   Int         @default(0) // NEW: Себестоимость
+  price       Int         @default(0) // цена за 1 штуку
 
-  // связь: в каких пунктах заказов есть этот товар
-  orderItems  OrderItem[]
+  // связи
+  orderItems      OrderItem[]
+  usedInBouquets  BouquetIngredient[] // связь: в каких шаблонах букетов используется
+}
+
+// NEW: Шаблон Букета (Витринный образец / карта)
+model BouquetTemplate {
+  id          Int      @id @default(autoincrement())
+  name        String   // "Букет Нежность", "101 Роза"
+  price       Int      // Итоговая розничная цена продажи этого букета
+
+  ingredients   BouquetIngredient[]
+  orderBouquets OrderBouquet[]      // связь с проданными букетами
+}
+
+// NEW: Ингредиенты рецепта (Состав шаблона букета)
+model BouquetIngredient {
+  id                Int      @id @default(autoincrement())
+  quantity          Int      // Количество (например, 15 роз)
+
+  bouquetTemplateId Int
+  bouquetTemplate   BouquetTemplate @relation(fields: [bouquetTemplateId], references: [id])
+
+  itemId            Int
+  item              Item     @relation(fields: [itemId], references: [id])
 }
 
 // заказы
@@ -63,22 +84,36 @@ model Order {
   clientId    Int?        // ссылка на клиента (может быть пустым)
   client      Client?     @relation(fields: [clientId], references: [id])
 
-  // состав заказа (цветы, лента, открытка)
+  // NEW: состав заказа теперь делится на поштучные товары и готовые букеты
   items       OrderItem[]
+  bouquets    OrderBouquet[]
 
   createdAt   DateTime    @default(now())
 }
 
-// состав заказа (промежуточная таблица для списания со склада)
+// состав заказа (промежуточная таблица для списания поштучного товара)
 model OrderItem {
-  id        Int   @id @default(autoincrement())
+  id          Int   @id @default(autoincrement())
 
-  orderId   Int
-  order     Order @relation(fields: [orderId], references: [id])
+  orderId     Int
+  order       Order @relation(fields: [orderId], references: [id])
 
-  itemId    Int
-  item      Item  @relation(fields: [itemId], references: [id])
+  itemId      Int
+  item        Item  @relation(fields: [itemId], references: [id])
 
-  quantity  Int   // ( 15 роз )
-  priceAtSale Int // фёфиксируем цену на момент продажи (чтобы отчеты не плыли при изменении цен в будущем)
+  quantity    Int   // (например, 15 роз)
+  priceAtSale Int   // фиксируем цену на момент продажи
+}
+
+// NEW: Промежуточная таблица для проданных букетов в заказе
+model OrderBouquet {
+  id                Int      @id @default(autoincrement())
+  quantity          Int      // Сколько таких одинаковых букетов купили
+  priceAtSale       Int      // Фиксируем цену букета на момент продажи
+
+  orderId           Int
+  order             Order    @relation(fields: [orderId], references: [id])
+
+  bouquetTemplateId Int
+  bouquetTemplate   BouquetTemplate @relation(fields: [bouquetTemplateId], references: [id])
 }
