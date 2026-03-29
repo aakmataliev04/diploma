@@ -1,10 +1,10 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { verifyToken, AuthRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// ОБЫЧНЫЕ ТОВАРЫ (РОЗЫ, ЛЕНТЫ И Т.Д.)
+// ОБЫЧНЫЕ ТОВАРЫ (РОЗЫ, ЛЕНТЫ)
 
 // Добавление товара на склад
 router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
@@ -33,7 +33,7 @@ router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<v
 });
 
 // Список всех товаров
-router.get('/', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/', verifyToken, async (_req: AuthRequest, res: Response): Promise<void> => {
     try {
         const items = await prisma.item.findMany({ orderBy: { id: 'desc' } });
         res.json(items);
@@ -88,17 +88,22 @@ router.patch('/:id/add-stock', verifyToken, async (req: AuthRequest, res: Respon
     }
 });
 
-// Удаление товара
+// Архивация товара
 router.delete('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        await prisma.item.delete({ where: { id: Number(id) } });
-        res.json({ message: 'Товар удален' });
+
+        await prisma.item.update({
+            where: { id: Number(id) },
+            data: { isActive: false }
+        });
+
+        res.json({ message: 'Товар успешно перенесен в архив' });
     } catch (error) {
-        res.status(500).json({ error: 'Ошибка при удалении' });
+        console.error('Ошибка при архивации товара:', error);
+        res.status(500).json({ error: 'Ошибка при удалении товара' });
     }
 });
-
 
 // ШАБЛОНЫ БУКЕТОВ
 
@@ -135,18 +140,93 @@ router.post('/templates', verifyToken, async (req: AuthRequest, res: Response): 
 });
 
 // Получить все шаблоны букетов с их составом
-router.get('/templates', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/templates', verifyToken, async (_req: AuthRequest, res: Response): Promise<void> => {
     try {
         const templates = await prisma.bouquetTemplate.findMany({
+            where: { isActive: true },
             include: {
                 ingredients: {
-                    include: { item: true } // Видим, какие именно цветы в составе
+                    include: { item: true }
                 }
             }
         });
         res.json(templates);
     } catch (error) {
         res.status(500).json({ error: 'Ошибка при получении шаблонов' });
+    }
+});
+
+router.put('/templates/:id', verifyToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const { name, price, isActive, ingredients } = req.body;
+
+    try {
+        const result = await prisma.$transaction(async (tx) => {
+            // обновляем данные шаблона
+            await tx.bouquetTemplate.update({
+                where: { id: Number(id) },
+                data: {
+                    name: name,
+                    price: price,
+                    isActive: isActive
+                }
+            });
+
+            if (ingredients && Array.isArray(ingredients)) {
+                // удаляем старые ингредиенты
+                await tx.bouquetIngredient.deleteMany({
+                    where: { bouquetTemplateId: Number(id) }
+                });
+
+                // создаем новые записи в BouquetIngredient
+                if (ingredients.length > 0) {
+                    await tx.bouquetIngredient.createMany({
+                        data: ingredients.map((ing: { itemId: number, quantity: number }) => ({
+                            bouquetTemplateId: Number(id),
+                            itemId: ing.itemId,
+                            quantity: ing.quantity
+                        }))
+                    });
+                }
+            }
+
+            // возвращаем обновленный объект
+            return tx.bouquetTemplate.findUnique({
+                where: {id: Number(id)},
+                include: {
+                    ingredients: {
+                        include: {item: true}
+                    }
+                }
+            });
+        });
+
+        res.json({
+            message: "Шаблон букета успешно обновлен",
+            template: result
+        });
+    } catch (error) {
+        console.error('Ошибка при обновлении шаблона:', error);
+        const errorMessage = error instanceof Error ? error.message : "Неизвестная ошибка сервера";
+        res.status(400).json({ error: errorMessage });
+    }
+});
+
+// Архивация шаблона букета Soft Delete
+router.delete('/templates/:id', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        await prisma.bouquetTemplate.update({
+            where: { id: Number(id) },
+            data: { isActive: false }
+        });
+
+        res.json({ message: 'Шаблон букета успешно перенесен в архив' });
+    } catch (error) {
+        console.error('Ошибка при архивации букета:', error);
+        res.status(500).json({ error: 'Ошибка при удалении букета' });
     }
 });
 

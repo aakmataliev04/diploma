@@ -6,7 +6,7 @@ datasource db {
   provider = "postgresql"
 }
 
-// сотрудники (флористы и Владелец)
+// сотрудники (флористы и admin)
 model User {
   id        Int      @id @default(autoincrement())
   name      String
@@ -15,12 +15,12 @@ model User {
   createdAt DateTime @default(now())
 }
 
-// клиенты магазина (для программы лояльности)
+// клиенты магазина
 model Client {
   id          Int           @id @default(autoincrement())
   name        String?       // необязательно
   phone       String        @unique
-  ordersCount Int           @default(0) // заказы для системы лояльности
+  ordersCount Int           @default(0)
 
   orders      Order[]
   events      ClientEvent[]
@@ -45,7 +45,8 @@ model Item {
   category    String      // 'FLOWER', 'PACKAGING', 'SERVICE'
   quantity    Int         @default(0)
   costPrice   Int         @default(0) // NEW: Себестоимость
-  price       Int         @default(0) // цена за 1 штуку
+  price       Int         @default(0)
+  isActive  Boolean  @default(true)
 
   // связи
   orderItems      OrderItem[]
@@ -56,7 +57,8 @@ model Item {
 model BouquetTemplate {
   id          Int      @id @default(autoincrement())
   name        String   // "Букет Нежность", "101 Роза"
-  price       Int      // Итоговая розничная цена продажи этого букета
+  price       Int
+  isActive  Boolean  @default(true)
 
   ingredients   BouquetIngredient[]
   orderBouquets OrderBouquet[]      // связь с проданными букетами
@@ -101,14 +103,14 @@ model OrderItem {
   itemId      Int
   item        Item  @relation(fields: [itemId], references: [id])
 
-  quantity    Int   // (например, 15 роз)
+  quantity    Int
   priceAtSale Int   // фиксируем цену на момент продажи
 }
 
 // NEW: Промежуточная таблица для проданных букетов в заказе
 model OrderBouquet {
   id                Int      @id @default(autoincrement())
-  quantity          Int      // Сколько таких одинаковых букетов купили
+  quantity          Int
   priceAtSale       Int      // Фиксируем цену букета на момент продажи
 
   orderId           Int
