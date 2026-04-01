@@ -1,15 +1,15 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
-import { verifyToken, AuthRequest } from '../middlewares/authMiddleware';
+import { verifyToken, AuthRequest, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 // ОБЫЧНЫЕ ТОВАРЫ (РОЗЫ, ЛЕНТЫ)
 
-// Добавление товара на склад
-router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+// Приемкой и карточками товаров в магазине могут заниматься и админ, и флорист.
+router.post('/', verifyToken, requireRole('ADMIN', 'FLORIST'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { name, category, quantity, price, costPrice } = req.body;
+        const { name, category, imageUrl, quantity, price, costPrice } = req.body;
 
         if (!name || !category || quantity === undefined || price === undefined || costPrice === undefined) {
             res.status(400).json({ error: 'Заполните все поля: name, category, quantity, price, costPrice' });
@@ -20,6 +20,7 @@ router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<v
             data: {
                 name: String(name),
                 category: String(category),
+                imageUrl: imageUrl ? String(imageUrl) : null,
                 quantity: Number(quantity),
                 price: Number(price),
                 costPrice: Number(costPrice) // Сохраняем закупку
@@ -32,21 +33,23 @@ router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<v
     }
 });
 
-// Список всех товаров
-router.get('/', verifyToken, async (_req: AuthRequest, res: Response): Promise<void> => {
+router.get('/', verifyToken, requireRole('ADMIN', 'FLORIST'), async (_req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const items = await prisma.item.findMany({ orderBy: { id: 'desc' } });
+        // В рабочем списке склада показываем только активные позиции.
+        const items = await prisma.item.findMany({
+            where: { isActive: true },
+            orderBy: { id: 'desc' }
+        });
         res.json(items);
     } catch (error) {
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
     }
 });
 
-// Изменение товара
-router.put('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+router.put('/:id', verifyToken, requireRole('ADMIN', 'FLORIST'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { name, category, quantity, price, costPrice } = req.body;
+        const { name, category, imageUrl, quantity, price, costPrice } = req.body;
 
         const existingItem = await prisma.item.findUnique({ where: { id: Number(id) } });
         if (!existingItem) {
@@ -59,6 +62,7 @@ router.put('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise
             data: {
                 name: name !== undefined ? String(name) : existingItem.name,
                 category: category !== undefined ? String(category) : existingItem.category,
+                imageUrl: imageUrl !== undefined ? (imageUrl ? String(imageUrl) : null) : existingItem.imageUrl,
                 quantity: quantity !== undefined ? Number(quantity) : existingItem.quantity,
                 price: price !== undefined ? Number(price) : existingItem.price,
                 costPrice: costPrice !== undefined ? Number(costPrice) : existingItem.costPrice,
@@ -71,8 +75,7 @@ router.put('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise
     }
 });
 
-// Пополнение склада (PATCH)
-router.patch('/:id/add-stock', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+router.patch('/:id/add-stock', verifyToken, requireRole('ADMIN', 'FLORIST'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
         const { addedQuantity } = req.body;
@@ -89,7 +92,7 @@ router.patch('/:id/add-stock', verifyToken, async (req: AuthRequest, res: Respon
 });
 
 // Архивация товара
-router.delete('/:id', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+router.delete('/:id', verifyToken, requireRole('ADMIN'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
 
@@ -107,10 +110,10 @@ router.delete('/:id', verifyToken, async (req: AuthRequest, res: Response): Prom
 
 // ШАБЛОНЫ БУКЕТОВ
 
-// Создать шаблон букета (рецепт)
-router.post('/templates', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+// Рабочие шаблоны букетов тоже можно поддерживать с ролью флориста.
+router.post('/templates', verifyToken, requireRole('ADMIN', 'FLORIST'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { name, price, ingredients } = req.body;
+        const { name, imageUrl, price, ingredients } = req.body;
         // Ожидаем ingredients: [{ itemId: 1, quantity: 5 }]
 
         if (!name || !price || !ingredients || !Array.isArray(ingredients)) {
@@ -121,6 +124,7 @@ router.post('/templates', verifyToken, async (req: AuthRequest, res: Response): 
         const newTemplate = await prisma.bouquetTemplate.create({
             data: {
                 name: String(name),
+                imageUrl: imageUrl ? String(imageUrl) : null,
                 price: Number(price),
                 ingredients: {
                     create: ingredients.map((ing: any) => ({
@@ -139,8 +143,7 @@ router.post('/templates', verifyToken, async (req: AuthRequest, res: Response): 
     }
 });
 
-// Получить все шаблоны букетов с их составом
-router.get('/templates', verifyToken, async (_req: AuthRequest, res: Response): Promise<void> => {
+router.get('/templates', verifyToken, requireRole('ADMIN', 'FLORIST'), async (_req: AuthRequest, res: Response): Promise<void> => {
     try {
         const templates = await prisma.bouquetTemplate.findMany({
             where: { isActive: true },
@@ -156,10 +159,10 @@ router.get('/templates', verifyToken, async (_req: AuthRequest, res: Response): 
     }
 });
 
-router.put('/templates/:id', verifyToken, async (req: Request, res: Response) => {
+router.put('/templates/:id', verifyToken, requireRole('ADMIN', 'FLORIST'), async (req: Request, res: Response) => {
     const { id } = req.params;
 
-    const { name, price, isActive, ingredients } = req.body;
+    const { name, imageUrl, price, isActive, ingredients } = req.body;
 
     try {
         const result = await prisma.$transaction(async (tx) => {
@@ -168,6 +171,7 @@ router.put('/templates/:id', verifyToken, async (req: Request, res: Response) =>
                 where: { id: Number(id) },
                 data: {
                     name: name,
+                    imageUrl: imageUrl !== undefined ? (imageUrl ? String(imageUrl) : null) : undefined,
                     price: price,
                     isActive: isActive
                 }
@@ -214,7 +218,7 @@ router.put('/templates/:id', verifyToken, async (req: Request, res: Response) =>
 });
 
 // Архивация шаблона букета Soft Delete
-router.delete('/templates/:id', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+router.delete('/templates/:id', verifyToken, requireRole('ADMIN'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
 

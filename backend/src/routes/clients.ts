@@ -1,13 +1,14 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
-import { verifyToken, AuthRequest } from '../middlewares/authMiddleware';
+import { verifyToken, AuthRequest, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 
 
 //  GET /api/clients/search?phone=0555
-router.get('/search', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+// Поиск клиента нужен и админу, и флористу прямо на кассе.
+router.get('/search', verifyToken, requireRole('ADMIN', 'FLORIST'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { phone } = req.query;
 
@@ -39,7 +40,7 @@ router.get('/search', verifyToken, async (req: AuthRequest, res: Response): Prom
 
 
 
-router.get('/', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/', verifyToken, requireRole('ADMIN'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         // достаем все обьекты из clients вместе с их поводами
         const clients = await prisma.client.findMany({
@@ -60,7 +61,7 @@ router.get('/', verifyToken, async (req: AuthRequest, res: Response): Promise<vo
 
 
 //  /api/clients
-router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/', verifyToken, requireRole('ADMIN'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { phone, name, events } = req.body;
 
@@ -106,7 +107,7 @@ router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<v
 
 
 // добавление повода клиенту
-router.post('/:id/events', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/:id/events', verifyToken, requireRole('ADMIN'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const clientId = Number(req.params.id);
         const { title, date } = req.body;

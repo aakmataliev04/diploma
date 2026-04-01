@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
+export type UserRole = 'ADMIN' | 'FLORIST';
+
 export interface AuthRequest extends Request {
     user?: {
         id: number;
-        role: string;
+        role: UserRole;
     };
 }
 
@@ -21,7 +23,7 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
 
     try {
         // проверяем токен секретным ключом
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: number; role: string };
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: number; role: UserRole };
 
         // записываем расшифрованные данные в запрос
         req.user = decoded;
@@ -30,4 +32,17 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
     } catch (error) {
         res.status(403).json({ error: 'Недействительный или просроченный токен.' });
     }
+};
+
+export const requireRole = (...allowedRoles: UserRole[]) => {
+    return (req: AuthRequest, res: Response, next: NextFunction): void => {
+        const userRole = req.user?.role;
+
+        if (!userRole || !allowedRoles.includes(userRole)) {
+            res.status(403).json({ error: 'Недостаточно прав для выполнения этого действия.' });
+            return;
+        }
+
+        next();
+    };
 };

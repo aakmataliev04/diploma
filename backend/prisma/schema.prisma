@@ -43,6 +43,7 @@ model Item {
   id          Int         @id @default(autoincrement())
   name        String
   category    String      // 'FLOWER', 'PACKAGING', 'SERVICE'
+  imageUrl    String?
   quantity    Int         @default(0)
   costPrice   Int         @default(0) // NEW: Себестоимость
   price       Int         @default(0)
@@ -57,6 +58,7 @@ model Item {
 model BouquetTemplate {
   id          Int      @id @default(autoincrement())
   name        String   // "Букет Нежность", "101 Роза"
+  imageUrl    String?
   price       Int
   isActive  Boolean  @default(true)
 

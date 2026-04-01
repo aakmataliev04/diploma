@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
-import { verifyToken } from '../middlewares/authMiddleware';
+import { verifyToken, requireRole } from '../middlewares/authMiddleware';
 
 interface AuthRequest extends Request {
     user?: {
@@ -11,7 +11,8 @@ interface AuthRequest extends Request {
 
 const router = Router();
 
-router.post('/', verifyToken, async (req: AuthRequest, res: Response): Promise<void> => {
+// Заказы оформляют обе рабочие роли: и администратор, и флорист.
+router.post('/', verifyToken, requireRole('ADMIN', 'FLORIST'), async (req: AuthRequest, res: Response): Promise<void> => {
     try {
 
         const { phone, name, source, items = [], bouquets = [], event } = req.body;
