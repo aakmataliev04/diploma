@@ -1,0 +1,31 @@
+.inventory-restock-modal {
+  max-width: 34rem;
+}
+
+.inventory-restock-summary {
+  display: flex;
+  gap: 0.875rem;
+}
+
+.inventory-restock-card {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: #f9f7f8;
+}
+
+.inventory-restock-value {
+  color: #2a2834;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+@media (max-width: 560px) {
+  .inventory-restock-summary {
+    flex-direction: column;
+  }
+}
