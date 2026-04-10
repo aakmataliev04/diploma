@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { axiosApi } from '../../axiosApi';
-import { type CreatedInventoryItem } from './InventoryModal';
-import { CheckIconForRestockModal, CloseIconForRestockModal } from './InventoryIcons';
-import './InventoryModal.css';
+import { axiosApi } from '../../../../axiosApi';
+import type { CreatedInventoryItem } from '../../../../types';
+import { CheckIconForRestockModal, CloseIconForRestockModal } from '../InventoryIcons/InventoryIcons';
+import '../InventoryModal/InventoryModal.css';
 import './InventoryRestockModal.css';
 
 interface InventoryRestockModalProps {
@@ -61,7 +61,7 @@ const InventoryRestockModal = ({
 
       onUpdated(data.item);
       onClose();
-    } catch (error) {
+    } catch {
       setErrorMessage('Не удалось пополнить склад. Проверь подключение к серверу и попробуй еще раз.');
     } finally {
       setIsSubmitting(false);

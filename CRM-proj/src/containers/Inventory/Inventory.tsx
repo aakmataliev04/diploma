@@ -1,8 +1,9 @@
 import { useDeferredValue, useEffect, useState } from 'react';
 import { axiosApi } from '../../axiosApi';
 import { useAuth } from '../../app/useAuth';
-import InventoryModal, { type CreatedInventoryItem } from './InventoryModal';
-import InventoryRestockModal from './InventoryRestockModal';
+import type { CreatedInventoryItem, InventoryItem } from '../../types';
+import InventoryModal from './components/InventoryModal/InventoryModal';
+import InventoryRestockModal from './components/InventoryRestockModal/InventoryRestockModal';
 import {
   EditIcon,
   InventoryFallbackIcon,
@@ -11,21 +12,10 @@ import {
   SearchIcon,
   TotalItemsIcon,
   WarningIcon,
-} from './InventoryIcons';
+} from './components/InventoryIcons/InventoryIcons';
 import './Inventory.css';
 
 type InventoryFilter = 'Все' | 'Цветы' | 'Упаковка' | 'Аксессуары' | 'Услуги';
-
-interface InventoryItem {
-  id: number;
-  name: string;
-  category: string;
-  imageUrl: string | null;
-  quantity: number;
-  costPrice: number;
-  price: number;
-  isActive: boolean;
-}
 
 const inventoryStats = [
   {
@@ -97,7 +87,7 @@ const Inventory = () => {
         setErrorMessage('');
         const { data } = await axiosApi.get<InventoryItem[]>('/inventory');
         setItems(data);
-      } catch (error) {
+      } catch {
         setErrorMessage('Не удалось загрузить склад. Проверь подключение к серверу.');
       } finally {
         setIsLoading(false);

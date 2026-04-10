@@ -40,7 +40,13 @@ const Header = ({ navigation, role }: HeaderProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    setIsMobileMenuOpen(false);
+    const closeMenuTimeout = window.setTimeout(() => {
+      setIsMobileMenuOpen(false);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(closeMenuTimeout);
+    };
   }, [location.pathname]);
 
   const handleLogout = () => {

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { axiosApi } from '../../axiosApi';
-import { useAuth } from '../../app/useAuth';
-import { CheckIconForModal, CloseIconForModal, ImageInputIconForModal } from './InventoryIcons';
+import { axiosApi } from '../../../../axiosApi';
+import { useAuth } from '../../../../app/useAuth';
+import type { CreatedInventoryItem } from '../../../../types';
+import { CheckIconForModal, CloseIconForModal, ImageInputIconForModal } from '../InventoryIcons/InventoryIcons';
 import './InventoryModal.css';
 
 interface InventoryModalProps {
@@ -10,17 +11,6 @@ interface InventoryModalProps {
   onSaved: (item: CreatedInventoryItem) => void;
   onDeleted?: (itemId: number) => void;
   itemToEdit?: CreatedInventoryItem | null;
-}
-
-export interface CreatedInventoryItem {
-  id: number;
-  name: string;
-  category: string;
-  imageUrl: string | null;
-  quantity: number;
-  costPrice: number;
-  price: number;
-  isActive: boolean;
 }
 
 interface CreateInventoryResponse {
@@ -147,7 +137,7 @@ const InventoryModal = ({
 
       onSaved(data.item);
       onClose();
-    } catch (error) {
+    } catch {
       setErrorMessage(
         isEditMode
           ? 'Не удалось обновить товар. Проверь заполнение полей и подключение к серверу.'
@@ -169,7 +159,7 @@ const InventoryModal = ({
       await axiosApi.delete(`/inventory/${itemToEdit.id}`);
       onDeleted?.(itemToEdit.id);
       onClose();
-    } catch (error) {
+    } catch {
       setErrorMessage('Не удалось удалить товар. Проверь подключение к серверу и попробуй еще раз.');
     } finally {
       setIsSubmitting(false);
