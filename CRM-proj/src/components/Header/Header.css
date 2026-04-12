@@ -1,7 +1,7 @@
 .header {
   display: flex;
   flex-direction: column;
-  border-bottom: 1px solid #f0e8ef;
+  border-bottom: 1.5px solid #f0e8ef;
   background: rgba(255, 255, 255, 0.96);
 
 }
@@ -125,7 +125,7 @@
   align-items: stretch;
   min-height: 3rem;
   padding: 0 1.5rem;
-  border-top: 1px solid #f6f0f4;
+  border-top: 1.3px solid #f6f0f4;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;

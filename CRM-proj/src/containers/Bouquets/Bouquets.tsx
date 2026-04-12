@@ -44,6 +44,7 @@ const Bouquets = () => {
   const [templateImageUrl, setTemplateImageUrl] = useState('');
   const [salePrice, setSalePrice] = useState('');
   const [ingredients, setIngredients] = useState<BouquetIngredientDraft[]>([]);
+  const [ingredientInputValues, setIngredientInputValues] = useState<Record<number, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [catalogError, setCatalogError] = useState('');
   const [formError, setFormError] = useState('');
@@ -94,12 +95,23 @@ const Bouquets = () => {
       const existingIngredient = prevIngredients.find((ingredient) => ingredient.itemId === item.id);
 
       if (existingIngredient) {
+        const nextQuantity = existingIngredient.quantity + 1;
+        setIngredientInputValues((prevValues) => ({
+          ...prevValues,
+          [item.id]: String(nextQuantity),
+        }));
+
         return prevIngredients.map((ingredient) =>
           ingredient.itemId === item.id
-            ? { ...ingredient, quantity: ingredient.quantity + 1 }
+            ? { ...ingredient, quantity: nextQuantity }
             : ingredient,
         );
       }
+
+      setIngredientInputValues((prevValues) => ({
+        ...prevValues,
+        [item.id]: '1',
+      }));
 
       return [...prevIngredients, { itemId: item.id, quantity: 1, item }];
     });
@@ -114,6 +126,19 @@ const Bouquets = () => {
           }
 
           const nextQuantity = direction === 'increment' ? ingredient.quantity + 1 : ingredient.quantity - 1;
+          setIngredientInputValues((prevValues) => {
+            if (nextQuantity <= 0) {
+              const nextValues = { ...prevValues };
+              delete nextValues[itemId];
+              return nextValues;
+            }
+
+            return {
+              ...prevValues,
+              [itemId]: String(nextQuantity),
+            };
+          });
+
           return { ...ingredient, quantity: nextQuantity };
         })
         .filter((ingredient) => ingredient.quantity > 0),
@@ -121,6 +146,19 @@ const Bouquets = () => {
   };
 
   const handleQuantityInputChange = (itemId: number, rawValue: string) => {
+    if (!/^\d*$/.test(rawValue)) {
+      return;
+    }
+
+    setIngredientInputValues((prevValues) => ({
+      ...prevValues,
+      [itemId]: rawValue,
+    }));
+
+    if (rawValue === '') {
+      return;
+    }
+
     const nextQuantity = Number(rawValue);
 
     if (!Number.isFinite(nextQuantity) || nextQuantity < 1) {
@@ -136,11 +174,36 @@ const Bouquets = () => {
     );
   };
 
+  const handleQuantityInputBlur = (itemId: number) => {
+    const currentIngredient = ingredients.find((ingredient) => ingredient.itemId === itemId);
+
+    if (!currentIngredient) {
+      return;
+    }
+
+    setIngredientInputValues((prevValues) => {
+      const rawValue = prevValues[itemId];
+
+      if (!rawValue || Number(rawValue) < 1) {
+        return {
+          ...prevValues,
+          [itemId]: String(currentIngredient.quantity),
+        };
+      }
+
+      return {
+        ...prevValues,
+        [itemId]: String(Math.floor(Number(rawValue))),
+      };
+    });
+  };
+
   const handleClear = () => {
     setTemplateName('');
     setTemplateImageUrl('');
     setSalePrice('');
     setIngredients([]);
+    setIngredientInputValues({});
     setStatusMessage('');
     setFormError('');
   };
@@ -392,8 +455,9 @@ const Bouquets = () => {
                         step="1"
                         inputMode="numeric"
                         className="bouquets-form-quantity-input"
-                        value={ingredient.quantity}
+                        value={ingredientInputValues[ingredient.itemId] ?? String(ingredient.quantity)}
                         onChange={(event) => handleQuantityInputChange(ingredient.itemId, event.target.value)}
+                        onBlur={() => handleQuantityInputBlur(ingredient.itemId)}
                         onFocus={(event) => event.target.select()}
                         aria-label={`Количество для ${ingredient.item.name}`}
                       />

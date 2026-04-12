@@ -2,7 +2,7 @@
   display: flex;
   width: 100%;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 24px;
   background: #FEFCFD;
 }
 
@@ -10,20 +10,20 @@
 .inventory-list {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 24px;
 }
 
 .inventory-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .inventory-heading {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 4px;
 }
 
 .inventory-add-button {
@@ -67,9 +67,7 @@
   border-radius: 1rem;
   border: 1px solid rgba(0, 0, 0, 0.05);
   background: #ffffff;
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.12), 0 3px 8px -4px rgba(0, 0, 0, 0.1);
 }
 
 .inventory-info-card-content {
@@ -191,9 +189,7 @@
   border-radius: 1rem;
   border: 1px solid rgba(0, 0, 0, 0.05);
   background: #fff;
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.12), 0 3px 8px -4px rgba(0, 0, 0, 0.1);
 }
 
 .inventory-search {
@@ -204,8 +200,9 @@
   min-height: 3.5rem;
   padding: 0 1rem;
   border-radius: 1.25rem;
-  border: 1px solid rgba(0, 0, 0, 0);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   background: #f9f7f8;
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.1), 0 3px 8px -4px rgba(0, 0, 0, 0.08);
 }
 
 .inventory-search-icon {
@@ -237,9 +234,10 @@
 .inventory-filter-button {
   min-height: 2.75rem;
   padding: 0 1.25rem;
-  border: none;
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 1.25rem;
-  background: #f9f7f8;
+  background: #ffffff;
+  box-shadow: 0 6px 12px -8px rgba(0, 0, 0, 0.1), 0 3px 8px -6px rgba(0, 0, 0, 0.08);
   color: #717182;
   font-size: 0.875rem;
   font-weight: 500;
@@ -286,9 +284,7 @@
   border-radius: 1rem;
   border: 1px solid rgba(0, 0, 0, 0.05);
   background: #fff;
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.08),
-    0 1px 2px -1px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.12), 0 3px 8px -4px rgba(0, 0, 0, 0.1);
   transition:
     transform 0.24s ease,
     box-shadow 0.24s ease,
@@ -325,8 +321,10 @@
   height: 3.875rem;
   flex: 0 0 3.875rem;
   overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 1rem;
   background: linear-gradient(135deg, rgba(183, 148, 244, 0.12) 0%, rgba(212, 165, 217, 0.12) 100%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
   color: #b794f4;
 }
 

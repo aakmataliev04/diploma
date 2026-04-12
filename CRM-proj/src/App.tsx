@@ -7,6 +7,7 @@ import Bouquets from './containers/Bouquets/Bouquets';
 import Inventory from './containers/Inventory/Inventory';
 import Login from './containers/Login/Login';
 import ModulePlaceholder from './containers/ModulePlaceholder/ModulePlaceholder';
+import Pos from './containers/Pos/Pos';
 import type { UserRole } from './types';
 
 const ProtectedRoute = ({ allowedRole }: { allowedRole: UserRole }) => {
@@ -45,9 +46,9 @@ const SessionRedirect = () => {
 
 const AdminRoutes = () => (
   <Route element={<ProtectedRoute allowedRole="ADMIN" />}>
-    <Route path="/admin" element={<Layout role="ADMIN" navigation={appNavigation.ADMIN} />}>
+      <Route path="/admin" element={<Layout role="ADMIN" navigation={appNavigation.ADMIN} />}>
       <Route index element={<Navigate to="pos" replace />} />
-      <Route path="pos" element={<ModulePlaceholder title="POS-терминал" description="Главный экран продаж для администратора." />} />
+      <Route path="pos" element={<Pos />} />
       <Route path="clients" element={<ModulePlaceholder title="Клиентская база" description="Полный доступ к базе клиентов и поводам." />} />
       <Route path="bouquets" element={<Bouquets />} />
       <Route path="inventory" element={<Inventory />} />
@@ -58,9 +59,9 @@ const AdminRoutes = () => (
 
 const FloristRoutes = () => (
   <Route element={<ProtectedRoute allowedRole="FLORIST" />}>
-    <Route path="/florist" element={<Layout role="FLORIST" navigation={appNavigation.FLORIST} />}>
+      <Route path="/florist" element={<Layout role="FLORIST" navigation={appNavigation.FLORIST} />}>
       <Route index element={<Navigate to="pos" replace />} />
-      <Route path="pos" element={<ModulePlaceholder title="POS-терминал" description="Рабочее место флориста для оформления заказов." />} />
+      <Route path="pos" element={<Pos />} />
       <Route path="client-search" element={<ModulePlaceholder title="Поиск клиентов" description="Только быстрый поиск клиента без доступа к полной базе." />} />
       <Route path="bouquets" element={<Bouquets />} />
       <Route path="inventory" element={<Inventory />} />
