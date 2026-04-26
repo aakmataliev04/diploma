@@ -1,4 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import { axiosApi } from '../../axiosApi';
 import type {
   BouquetFilter,
@@ -48,7 +49,6 @@ const Bouquets = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [catalogError, setCatalogError] = useState('');
   const [formError, setFormError] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewData, setPreviewData] = useState<BouquetPreviewData | null>(null);
   const deferredSearchValue = useDeferredValue(searchValue);
@@ -89,7 +89,6 @@ const Bouquets = () => {
   const isFormValid = templateName.trim() !== '' && parsedSalePrice > 0 && ingredients.length > 0;
 
   const handleAddIngredient = (item: InventoryItem) => {
-    setStatusMessage('');
     setFormError('');
     setIngredients((prevIngredients) => {
       const existingIngredient = prevIngredients.find((ingredient) => ingredient.itemId === item.id);
@@ -204,7 +203,6 @@ const Bouquets = () => {
     setSalePrice('');
     setIngredients([]);
     setIngredientInputValues({});
-    setStatusMessage('');
     setFormError('');
   };
 
@@ -236,8 +234,6 @@ const Bouquets = () => {
     try {
       setIsSubmitting(true);
       setFormError('');
-      setStatusMessage('');
-
       const payload = {
         name: templateName.trim(),
         imageUrl: templateImageUrl.trim() ? templateImageUrl.trim() : null,
@@ -248,12 +244,18 @@ const Bouquets = () => {
         })),
       };
 
-      const { data } = await axiosApi.post<BouquetTemplateResponse>('/inventory/templates', payload);
+      await toast.promise(
+        axiosApi.post<BouquetTemplateResponse>('/inventory/templates', payload),
+        {
+          pending: 'Сохраняем шаблон букета...',
+          success: 'Шаблон букета сохранен.',
+          error: 'Не удалось сохранить шаблон.',
+        },
+      );
 
-      setStatusMessage(`Шаблон «${data.template.name}» сохранен.`);
       handleClear();
     } catch {
-      setFormError('Не удалось сохранить шаблон. Проверь данные и попробуй еще раз.');
+      // Error toast is handled by toast.promise.
     } finally {
       setIsSubmitting(false);
     }
@@ -545,7 +547,6 @@ const Bouquets = () => {
           </button>
 
           {formError ? <p className="bouquets-status bouquets-status-error">{formError}</p> : null}
-          {!formError && statusMessage ? <p className="bouquets-status bouquets-status-success">{statusMessage}</p> : null}
         </div>
       </div>
     </section>

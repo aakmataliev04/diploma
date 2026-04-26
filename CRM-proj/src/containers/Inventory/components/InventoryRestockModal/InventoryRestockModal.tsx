@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import { axiosApi } from '../../../../axiosApi';
 import type { CreatedInventoryItem } from '../../../../types';
 import { CheckIconForRestockModal, CloseIconForRestockModal } from '../InventoryIcons/InventoryIcons';
@@ -48,6 +49,7 @@ const InventoryRestockModal = ({
 
     if (!isFormValid || isSubmitting) {
       setErrorMessage('Укажи корректное количество для пополнения.');
+      toast.error('Укажи корректное количество для пополнения.');
       return;
     }
 
@@ -55,14 +57,23 @@ const InventoryRestockModal = ({
       setIsSubmitting(true);
       setErrorMessage('');
 
-      const { data } = await axiosApi.patch<RestockResponse>(`/inventory/${itemToRestock.id}/add-stock`, {
-        addedQuantity: parsedAddedQuantity,
-      });
+      const response = await toast.promise(
+        axiosApi.patch<RestockResponse>(`/inventory/${itemToRestock.id}/add-stock`, {
+          addedQuantity: parsedAddedQuantity,
+        }),
+        {
+          pending: 'Пополняем остаток...',
+          success: 'Склад успешно пополнен.',
+          error: 'Не удалось пополнить склад.',
+        },
+      );
+
+      const { data } = response;
 
       onUpdated(data.item);
       onClose();
     } catch {
-      setErrorMessage('Не удалось пополнить склад. Проверь подключение к серверу и попробуй еще раз.');
+      // Error toast is handled by toast.promise.
     } finally {
       setIsSubmitting(false);
     }

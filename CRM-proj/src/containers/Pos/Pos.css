@@ -603,20 +603,6 @@
   background: #ffffff;
 }
 
-.pos-form-status {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.pos-form-status-error {
-  color: #ff6b9d;
-}
-
-.pos-form-status-success {
-  color: #4a7c5e;
-}
-
 .pos-form-total {
   display: flex;
   align-items: flex-end;

@@ -21,3 +21,26 @@
   font-weight: 400;
   line-height: 1.5;
 }
+
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  .page-subtitle {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+}
+
+@media (max-width: 560px) {
+  .page-title {
+    font-size: 20px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    line-height: 1.35;
+  }
+}

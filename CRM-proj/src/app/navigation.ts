@@ -15,7 +15,7 @@ export const appNavigation: Record<UserRole, NavigationItem[]> = {
   ],
   FLORIST: [
     { icon: 'pos', label: 'POS-терминал', to: '/florist/pos' },
-    { icon: 'clients', label: 'Поиск клиентов', to: '/florist/client-search' },
+    { icon: 'clients', label: 'Клиентская база', to: '/florist/clients' },
     { icon: 'bouquets', label: 'Конструктор букетов', to: '/florist/bouquets' },
     { icon: 'inventory', label: 'Склад', to: '/florist/inventory' },
   ],

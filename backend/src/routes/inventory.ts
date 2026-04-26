@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import prisma from '../db';
 import { verifyToken, AuthRequest, requireRole } from '../middlewares/authMiddleware';
 
@@ -159,60 +159,42 @@ router.get('/templates', verifyToken, requireRole('ADMIN', 'FLORIST'), async (_r
     }
 });
 
-router.put('/templates/:id', verifyToken, requireRole('ADMIN', 'FLORIST'), async (req: Request, res: Response) => {
+router.put('/templates/:id', verifyToken, requireRole('ADMIN', 'FLORIST'), async (req: AuthRequest, res: Response): Promise<void> => {
     const { id } = req.params;
-
-    const { name, imageUrl, price, isActive, ingredients } = req.body;
+    const { name, imageUrl, price, isActive } = req.body;
 
     try {
-        const result = await prisma.$transaction(async (tx) => {
-            // обновляем данные шаблона
-            await tx.bouquetTemplate.update({
-                where: { id: Number(id) },
-                data: {
-                    name: name,
-                    imageUrl: imageUrl !== undefined ? (imageUrl ? String(imageUrl) : null) : undefined,
-                    price: price,
-                    isActive: isActive
-                }
-            });
+        const existingTemplate = await prisma.bouquetTemplate.findUnique({
+            where: { id: Number(id) }
+        });
 
-            if (ingredients && Array.isArray(ingredients)) {
-                // удаляем старые ингредиенты
-                await tx.bouquetIngredient.deleteMany({
-                    where: { bouquetTemplateId: Number(id) }
-                });
+        if (!existingTemplate) {
+            res.status(404).json({ error: 'Шаблон букета не найден' });
+            return;
+        }
 
-                // создаем новые записи в BouquetIngredient
-                if (ingredients.length > 0) {
-                    await tx.bouquetIngredient.createMany({
-                        data: ingredients.map((ing: { itemId: number, quantity: number }) => ({
-                            bouquetTemplateId: Number(id),
-                            itemId: ing.itemId,
-                            quantity: ing.quantity
-                        }))
-                    });
+        const updatedTemplate = await prisma.bouquetTemplate.update({
+            where: { id: Number(id) },
+            data: {
+                name: name !== undefined ? String(name) : existingTemplate.name,
+                imageUrl: imageUrl !== undefined ? (imageUrl ? String(imageUrl) : null) : existingTemplate.imageUrl,
+                price: price !== undefined ? Number(price) : existingTemplate.price,
+                isActive: isActive !== undefined ? Boolean(isActive) : existingTemplate.isActive
+            },
+            include: {
+                ingredients: {
+                    include: { item: true }
                 }
             }
-
-            // возвращаем обновленный объект
-            return tx.bouquetTemplate.findUnique({
-                where: {id: Number(id)},
-                include: {
-                    ingredients: {
-                        include: {item: true}
-                    }
-                }
-            });
         });
 
         res.json({
-            message: "Шаблон букета успешно обновлен",
-            template: result
+            message: 'Шаблон букета успешно обновлен',
+            template: updatedTemplate
         });
     } catch (error) {
         console.error('Ошибка при обновлении шаблона:', error);
-        const errorMessage = error instanceof Error ? error.message : "Неизвестная ошибка сервера";
+        const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка сервера';
         res.status(400).json({ error: errorMessage });
     }
 });

@@ -517,6 +517,168 @@
   text-align: center;
 }
 
+.inventory-bouquets-card {
+  display: flex;
+  flex: 1 1 calc(25% - 12px);
+  min-width: 260px;
+  padding: 16px;
+  flex-direction: column;
+  gap: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, #fff0f4 0%, #fdf0f5 14.29%, #fcf1f6 28.57%, #faf1f7 42.86%, #f9f1f9 57.14%, #f7f1fa 71.43%, #f6f2fb 85.71%, #f4f2fc 100%);
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.12), 0 3px 8px -4px rgba(0, 0, 0, 0.1);
+}
+
+.inventory-bouquets-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.inventory-bouquets-card-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  height: 78px;
+  flex: 0 0 78px;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
+  color: #b794f4;
+}
+
+.inventory-bouquets-card-image-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.inventory-bouquets-card-image-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.inventory-bouquets-card-main {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inventory-bouquets-card-tittle {
+  margin: 0;
+  color: #2a2834;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.inventory-bouquets-card-category {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #ff6b9d;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.inventory-bouquets-card-composition {
+  display: flex;
+  min-height: 68px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inventory-bouquets-card-composition-label {
+  color: #717182;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.inventory-bouquets-card-composition-text {
+  margin: 0;
+  color: #5f5d68;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.inventory-bouquets-card-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+.inventory-bouquets-card-summary-item {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inventory-bouquets-card-summary-label {
+  color: #717182;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.inventory-bouquets-card-summary-value {
+  color: #2a2834;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.inventory-bouquets-card-summary-value-sale {
+  color: #ff6b9d;
+}
+
+.inventory-bouquets-card-actions {
+  display: flex;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.inventory-bouquets-card-edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  background: #fff;
+  color: #5f5d68;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 8px -4px rgba(0, 0, 0, 0.12), 0 2px 4px -2px rgba(0, 0, 0, 0.08);
+}
+
+.inventory-bouquets-card-edit-icon {
+  width: 16px;
+  height: 16px;
+  color: #d4a5d9;
+}
+
 @media (max-width: 1100px) {
   .inventory-info {
     flex-wrap: wrap;
@@ -538,12 +700,72 @@
   .inventory-card {
     flex-basis: calc(50% - 0.5rem);
   }
+
+  .inventory-bouquets-card {
+    flex-basis: calc(50% - 0.5rem);
+  }
 }
 
 @media (max-width: 768px) {
   .inventory-top {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .inventory-container,
+  .inventory-state,
+  .inventory-list {
+    gap: 20px;
+  }
+
+  .inventory-info-card-title,
+  .inventory-info-card-tittle {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  .inventory-info-card-text {
+    font-size: 26px;
+  }
+
+  .inventory-warning-title {
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  .inventory-warning-tag {
+    font-size: 13px;
+  }
+
+  .inventory-search-input {
+    font-size: 14px;
+  }
+
+  .inventory-filter-button {
+    font-size: 13px;
+  }
+
+  .inventory-card-title,
+  .inventory-card-tittle {
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .inventory-card-stock-label,
+  .inventory-card-stock-value {
+    font-size: 13px;
+  }
+
+  .inventory-card-summary-label {
+    font-size: 10px;
+  }
+
+  .inventory-card-summary-value {
+    font-size: 13px;
+  }
+
+  .inventory-addQuatity {
+    font-size: 13px;
   }
 
   .inventory-add-button {
@@ -558,13 +780,52 @@
     flex-basis: 100%;
     min-width: 0;
   }
+
+  .inventory-bouquets-card {
+    flex-basis: 100%;
+    min-width: 0;
+  }
 }
 
 @media (max-width: 560px) {
   .inventory-container,
   .inventory-state,
   .inventory-list {
-    gap: 1rem;
+    gap: 16px;
+  }
+
+  .inventory-heading {
+    gap: 2px;
+  }
+
+  .inventory-add-button {
+    min-height: 44px;
+    font-size: 13px;
+  }
+
+  .inventory-info-card {
+    min-height: 112px;
+    padding: 16px 16px 16px 18px;
+  }
+
+  .inventory-info-card-title,
+  .inventory-info-card-tittle {
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .inventory-info-card-text {
+    font-size: 22px;
+  }
+
+  .inventory-warning {
+    gap: 12px;
+    padding: 14px 14px 16px;
+  }
+
+  .inventory-warning-title {
+    font-size: 15px;
+    line-height: 20px;
   }
 
   .inventory-warning-tags,
@@ -572,12 +833,111 @@
     gap: 0.5rem;
   }
 
+  .inventory-warning-tag {
+    min-height: 30px;
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+
   .inventory-filter-button {
+    min-height: 38px;
     padding: 0 1rem;
+    font-size: 12px;
   }
 
   .inventory-search-panel {
     padding: 0.75rem;
+  }
+
+  .inventory-search {
+    min-height: 48px;
+    gap: 10px;
+  }
+
+  .inventory-search-input {
+    font-size: 13px;
+  }
+
+  .inventory-card {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .inventory-bouquets-card {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .inventory-bouquets-card-head {
+    gap: 12px;
+  }
+
+  .inventory-bouquets-card-image {
+    width: 72px;
+    height: 72px;
+    flex-basis: 72px;
+  }
+
+  .inventory-bouquets-card-tittle {
+    font-size: 16px;
+  }
+
+  .inventory-bouquets-card-composition {
+    min-height: 0;
+  }
+
+  .inventory-bouquets-card-composition-text {
+    font-size: 13px;
+  }
+
+  .inventory-bouquets-card-summary-label {
+    font-size: 10px;
+  }
+
+  .inventory-bouquets-card-summary-value {
+    font-size: 13px;
+  }
+
+  .inventory-bouquets-card-edit-button {
+    min-height: 36px;
+    font-size: 13px;
+  }
+
+  .inventory-card-head {
+    gap: 12px;
+    min-height: 76px;
+  }
+
+  .inventory-card-title-row {
+    min-height: 46px;
+  }
+
+  .inventory-card-title,
+  .inventory-card-tittle {
+    font-size: 15px;
+    line-height: 18px;
+  }
+
+  .inventory-card-categoryTittle {
+    font-size: 10px;
+  }
+
+  .inventory-card-stock-label,
+  .inventory-card-stock-value {
+    font-size: 12px;
+  }
+
+  .inventory-card-summary-label {
+    font-size: 10px;
+  }
+
+  .inventory-card-summary-value {
+    font-size: 12px;
+  }
+
+  .inventory-addQuatity {
+    min-height: 38px;
+    font-size: 12px;
   }
 
   .inventory-card-summary,

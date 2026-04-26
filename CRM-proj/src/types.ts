@@ -3,7 +3,7 @@ export type NavigationIcon = 'pos' | 'clients' | 'bouquets' | 'inventory' | 'ana
 export type InventoryCategory = 'FLOWER' | 'PACKAGING' | 'ACCESSORY' | 'SERVICE';
 export type BouquetFilter = 'Все' | 'Цветы' | 'Упаковка' | 'Аксессуары';
 export type PosCatalogFilter = 'Все' | 'Букеты' | 'Цветы' | 'Упаковка' | 'Аксессуары' | 'Услуги';
-export type PosOrderSource = 'С улицы' | 'WhatsApp' | 'Instagram' | '2 GIS';
+export type PosOrderSource = 'С улицы' | 'WhatsApp' | 'Instagram' | 'Telegram' | '2 GIS';
 export type PosCatalogEntryType = 'bouquet' | 'item';
 
 export interface AuthUser {
@@ -100,4 +100,136 @@ export interface CreateOrderResponse {
     id: number;
     totalPrice: number;
   };
+}
+
+export interface ClientsInfoCardData {
+  id: string;
+  title: string;
+  value: number;
+  tone: 'accent' | 'muted';
+  icon: 'clients' | 'events-known' | 'events-missing';
+}
+
+export interface ClientEventApi {
+  id: number;
+  title: string;
+  date: string;
+  clientId: number;
+}
+
+export interface ClientApi {
+  id: number;
+  name: string | null;
+  phone: string;
+  ordersCount: number;
+  events: ClientEventApi[];
+  createdAt: string;
+}
+
+export interface ClientEditModalEventDraft {
+  id: number | string;
+  title: string;
+  date: string;
+}
+
+export interface UpdateClientPayload {
+  name: string | null;
+  phone: string;
+  events: Array<{
+    title: string;
+    date: string;
+  }>;
+}
+
+export interface UpdateClientResponse {
+  message: string;
+  client: ClientApi;
+}
+
+export interface UpcomingClientEventData {
+  id: number;
+  name: string;
+  phone: string;
+  eventName: string;
+  relativeDate: string;
+  absoluteDate: string;
+  extraCount?: number;
+}
+
+export type ClientsListView = 'cards' | 'list';
+export type ClientsListFilter = 'all' | 'with-events' | 'without-events' | 'upcoming';
+export type ClientsListSort = 'name' | 'orders' | 'event-date';
+
+export interface ClientListCardEventData {
+  title: string;
+  dateLabel: string;
+  extraCount?: number;
+  hasUpcomingEvent?: boolean;
+}
+
+export interface ClientListCardData {
+  id: number;
+  name: string;
+  phone: string;
+  totalOrders: number;
+  loyaltyCurrent: number;
+  loyaltyTarget: number;
+  event?: ClientListCardEventData | null;
+}
+
+export type AnalyticsApiPeriod = 'today' | 'week' | 'month' | 'year' | 'custom';
+
+export interface AnalyticsSummaryApi {
+  revenue: number;
+  profit: number;
+  ordersCount: number;
+  averageCheck: number;
+  newClients: number;
+  trends: {
+    revenue: number;
+    profit: number;
+    ordersCount: number;
+    averageCheck: number;
+    newClients: number;
+  };
+}
+
+export interface AnalyticsChartPointApi {
+  label: string;
+  date: string;
+  ordersCount: number;
+  revenue: number;
+  profit: number;
+}
+
+export interface AnalyticsTopBouquetApi {
+  name: string;
+  revenue: number;
+  amount: number;
+  progress: number;
+}
+
+export interface AnalyticsFlowerApi {
+  name: string;
+  amount: number;
+  expense: string;
+  progress: number;
+  color: string;
+}
+
+export interface AnalyticsSourceApi {
+  name: string;
+  amount: number;
+  value: number;
+  color: string;
+  icon: string;
+}
+
+export interface AnalyticsResponse {
+  period: AnalyticsApiPeriod;
+  summary: AnalyticsSummaryApi;
+  chart: AnalyticsChartPointApi[];
+  topBouquets: AnalyticsTopBouquetApi[];
+  flowers: AnalyticsFlowerApi[];
+  sources: AnalyticsSourceApi[];
 }

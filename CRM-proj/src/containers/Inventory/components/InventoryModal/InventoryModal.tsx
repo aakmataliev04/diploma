@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import { axiosApi } from '../../../../axiosApi';
 import { useAuth } from '../../../../app/useAuth';
 import type { CreatedInventoryItem } from '../../../../types';
@@ -115,6 +116,7 @@ const InventoryModal = ({
 
     if (!isFormValid || isSubmitting) {
       setErrorMessage('Заполни все обязательные поля.');
+      toast.error('Заполни все обязательные поля.');
       return;
     }
 
@@ -131,18 +133,23 @@ const InventoryModal = ({
         imageUrl: formState.imageUrl.trim() ? formState.imageUrl.trim() : null,
       };
 
-      const { data } = isEditMode
-        ? await axiosApi.put<CreateInventoryResponse>(`/inventory/${itemToEdit.id}`, payload)
-        : await axiosApi.post<CreateInventoryResponse>('/inventory', payload);
+      const response = await toast.promise(
+        isEditMode
+          ? axiosApi.put<CreateInventoryResponse>(`/inventory/${itemToEdit.id}`, payload)
+          : axiosApi.post<CreateInventoryResponse>('/inventory', payload),
+        {
+          pending: isEditMode ? 'Обновляем товар...' : 'Добавляем товар...',
+          success: isEditMode ? 'Товар обновлен.' : 'Товар добавлен на склад.',
+          error: isEditMode ? 'Не удалось обновить товар.' : 'Не удалось добавить товар.',
+        },
+      );
+
+      const { data } = response;
 
       onSaved(data.item);
       onClose();
     } catch {
-      setErrorMessage(
-        isEditMode
-          ? 'Не удалось обновить товар. Проверь заполнение полей и подключение к серверу.'
-          : 'Не удалось добавить товар. Проверь заполнение полей и подключение к серверу.',
-      );
+      // Error toast is handled by toast.promise.
     } finally {
       setIsSubmitting(false);
     }
@@ -156,11 +163,15 @@ const InventoryModal = ({
     try {
       setIsSubmitting(true);
       setErrorMessage('');
-      await axiosApi.delete(`/inventory/${itemToEdit.id}`);
+      await toast.promise(axiosApi.delete(`/inventory/${itemToEdit.id}`), {
+        pending: 'Переносим товар в архив...',
+        success: 'Товар перенесен в архив.',
+        error: 'Не удалось перенести товар в архив.',
+      });
       onDeleted?.(itemToEdit.id);
       onClose();
     } catch {
-      setErrorMessage('Не удалось удалить товар. Проверь подключение к серверу и попробуй еще раз.');
+      // Error toast is handled by toast.promise.
     } finally {
       setIsSubmitting(false);
     }

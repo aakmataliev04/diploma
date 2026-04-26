@@ -1,4 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 import { axiosApi } from '../../axiosApi';
 import type {
   BouquetTemplate,
@@ -23,7 +24,7 @@ import {
 import './Pos.css';
 
 const posFilters: PosCatalogFilter[] = ['Все', 'Букеты', 'Цветы', 'Упаковка', 'Аксессуары', 'Услуги'];
-const orderSources: PosOrderSource[] = ['С улицы', 'WhatsApp', 'Instagram', '2 GIS'];
+const orderSources: PosOrderSource[] = ['С улицы', 'WhatsApp', 'Instagram', 'Telegram', '2 GIS'];
 
 const formatNumber = (value: number) => new Intl.NumberFormat('ru-RU').format(value);
 
@@ -86,8 +87,6 @@ const Pos = () => {
   const [eventDate, setEventDate] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [catalogError, setCatalogError] = useState('');
-  const [submitError, setSubmitError] = useState('');
-  const [submitStatus, setSubmitStatus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const deferredSearchValue = useDeferredValue(searchValue);
 
@@ -158,9 +157,6 @@ const Pos = () => {
   };
 
   const addToBasket = (catalogItem: PosCatalogEntry) => {
-    setSubmitError('');
-    setSubmitStatus('');
-
     setBasketItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === catalogItem.id);
 
@@ -299,7 +295,7 @@ const Pos = () => {
 
   const handleSubmitOrder = async () => {
     if (basketItems.length === 0 || isSubmitting) {
-      setSubmitError('Добавь хотя бы одну позицию в корзину.');
+      toast.error('Добавь хотя бы одну позицию в корзину.');
       return;
     }
 
@@ -308,15 +304,13 @@ const Pos = () => {
       const hasPhone = normalizedPhone !== '' && normalizedPhone !== '+996';
 
       if (!hasPhone) {
-        setSubmitError('Заполни номер телефона клиента.');
+        toast.error('Заполни номер телефона клиента.');
         return;
       }
     }
 
     try {
       setIsSubmitting(true);
-      setSubmitError('');
-      setSubmitStatus('');
 
       const payload = {
         source,
@@ -343,12 +337,25 @@ const Pos = () => {
             : undefined,
       };
 
-      const { data } = await axiosApi.post<CreateOrderResponse>('/orders', payload);
+      const orderPromise = axiosApi.post<CreateOrderResponse>('/orders', payload);
+      const response = await toast.promise(orderPromise, {
+        pending: 'Оформляем заказ...',
+        success: {
+          render({ data }) {
+            const orderResponse = data as Awaited<typeof orderPromise>;
+            return orderResponse.data.message || 'Заказ успешно оформлен.';
+          },
+        },
+        error: 'Не удалось оформить заказ. Проверь данные и попробуй еще раз.',
+      });
 
-      setSubmitStatus(data.message || 'Заказ успешно оформлен.');
+      if (!response.data) {
+        return;
+      }
+
       resetOrderForm();
     } catch {
-      setSubmitError('Не удалось оформить заказ. Проверь данные и попробуй еще раз.');
+      // Error toast is handled by toast.promise.
     } finally {
       setIsSubmitting(false);
     }
@@ -620,11 +627,6 @@ const Pos = () => {
         </div>
 
         <div className="pos-form-footer">
-          {submitError ? <p className="pos-form-status pos-form-status-error">{submitError}</p> : null}
-          {!submitError && submitStatus ? (
-            <p className="pos-form-status pos-form-status-success">{submitStatus}</p>
-          ) : null}
-
           <div className="pos-form-total">
             <span className="pos-form-total-label">К оплате:</span>
             <strong className="pos-form-total-value">{formatNumber(totalPrice)} KGS</strong>

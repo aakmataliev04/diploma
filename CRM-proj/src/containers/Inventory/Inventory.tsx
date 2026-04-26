@@ -1,7 +1,8 @@
 import { useDeferredValue, useEffect, useState } from 'react';
 import { axiosApi } from '../../axiosApi';
 import { useAuth } from '../../app/useAuth';
-import type { CreatedInventoryItem, InventoryItem } from '../../types';
+import type { BouquetTemplate, CreatedInventoryItem, InventoryItem } from '../../types';
+import InventoryBouquetModal from './components/InventoryBouquetModal/InventoryBouquetModal';
 import InventoryModal from './components/InventoryModal/InventoryModal';
 import InventoryRestockModal from './components/InventoryRestockModal/InventoryRestockModal';
 import {
@@ -15,7 +16,7 @@ import {
 } from './components/InventoryIcons/InventoryIcons';
 import './Inventory.css';
 
-type InventoryFilter = 'Все' | 'Цветы' | 'Упаковка' | 'Аксессуары' | 'Услуги';
+type InventoryFilter = 'Все' | 'Букеты' | 'Цветы' | 'Упаковка' | 'Аксессуары' | 'Услуги';
 
 const inventoryStats = [
   {
@@ -39,7 +40,7 @@ const inventoryStats = [
   },
 ];
 
-const inventoryFilters: InventoryFilter[] = ['Все', 'Цветы', 'Упаковка', 'Аксессуары', 'Услуги'];
+const inventoryFilters: InventoryFilter[] = ['Все', 'Букеты', 'Цветы', 'Упаковка', 'Аксессуары', 'Услуги'];
 const lowStockThreshold = 20;
 const maxProgressQuantity = 100;
 
@@ -59,6 +60,14 @@ const categoryFilterByCode: Record<string, InventoryFilter> = {
 
 const formatNumber = (value: number) => new Intl.NumberFormat('ru-RU').format(value);
 
+const getBouquetIngredientsSummary = (template: BouquetTemplate) =>
+  template.ingredients
+    .map((ingredient) => `${ingredient.item.name}${ingredient.quantity > 1 ? ` ${ingredient.quantity}шт` : ''}`)
+    .join(', ');
+
+const getBouquetCost = (template: BouquetTemplate) =>
+  template.ingredients.reduce((total, ingredient) => total + ingredient.quantity * ingredient.item.costPrice, 0);
+
 const getProgressPercent = (quantity: number) => {
   const percent = (quantity / maxProgressQuantity) * 100;
   return Math.max(8, Math.min(100, percent));
@@ -67,13 +76,17 @@ const getProgressPercent = (quantity: number) => {
 const Inventory = () => {
   const { session } = useAuth();
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [bouquetTemplates, setBouquetTemplates] = useState<BouquetTemplate[]>([]);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+  const [isBouquetModalOpen, setIsBouquetModalOpen] = useState(false);
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [selectedBouquetTemplate, setSelectedBouquetTemplate] = useState<BouquetTemplate | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<InventoryFilter>('Все');
   const [searchValue, setSearchValue] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [templatesErrorMessage, setTemplatesErrorMessage] = useState('');
   const deferredSearchValue = useDeferredValue(searchValue);
 
   useEffect(() => {
@@ -85,8 +98,26 @@ const Inventory = () => {
       try {
         setIsLoading(true);
         setErrorMessage('');
-        const { data } = await axiosApi.get<InventoryItem[]>('/inventory');
-        setItems(data);
+        setTemplatesErrorMessage('');
+
+        const [itemsResponse, templatesResponse] = await Promise.allSettled([
+          axiosApi.get<InventoryItem[]>('/inventory'),
+          axiosApi.get<BouquetTemplate[]>('/inventory/templates'),
+        ]);
+
+        if (itemsResponse.status === 'fulfilled') {
+          setItems(itemsResponse.value.data);
+        } else {
+          setItems([]);
+          setErrorMessage('Не удалось загрузить склад. Проверь подключение к серверу.');
+        }
+
+        if (templatesResponse.status === 'fulfilled') {
+          setBouquetTemplates(templatesResponse.value.data);
+        } else {
+          setBouquetTemplates([]);
+          setTemplatesErrorMessage('Не удалось загрузить шаблоны букетов.');
+        }
       } catch {
         setErrorMessage('Не удалось загрузить склад. Проверь подключение к серверу.');
       } finally {
@@ -107,6 +138,13 @@ const Inventory = () => {
     const searchMatches = !normalizedSearch || item.name.toLowerCase().includes(normalizedSearch);
 
     return filterMatches && searchMatches;
+  });
+  const filteredBouquetTemplates = bouquetTemplates.filter((template) => {
+    if (selectedFilter !== 'Букеты') {
+      return false;
+    }
+
+    return !normalizedSearch || template.name.toLowerCase().includes(normalizedSearch);
   });
 
   const totalInventoryCost = items.reduce((total, item) => total + item.quantity * item.costPrice, 0);
@@ -132,6 +170,16 @@ const Inventory = () => {
     setItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
   };
 
+  const handleSavedBouquetTemplate = (savedTemplate: BouquetTemplate) => {
+    setBouquetTemplates((prevTemplates) =>
+      prevTemplates.map((template) => (template.id === savedTemplate.id ? savedTemplate : template)),
+    );
+  };
+
+  const handleDeletedBouquetTemplate = (templateId: number) => {
+    setBouquetTemplates((prevTemplates) => prevTemplates.filter((template) => template.id !== templateId));
+  };
+
   const handleOpenCreateModal = () => {
     setSelectedItem(null);
     setIsInventoryModalOpen(true);
@@ -142,6 +190,11 @@ const Inventory = () => {
     setIsInventoryModalOpen(true);
   };
 
+  const handleOpenBouquetEditModal = (template: BouquetTemplate) => {
+    setSelectedBouquetTemplate(template);
+    setIsBouquetModalOpen(true);
+  };
+
   const handleOpenRestockModal = (item: InventoryItem) => {
     setSelectedItem(item);
     setIsRestockModalOpen(true);
@@ -150,6 +203,11 @@ const Inventory = () => {
   const handleCloseModal = () => {
     setIsInventoryModalOpen(false);
     setSelectedItem(null);
+  };
+
+  const handleCloseBouquetModal = () => {
+    setIsBouquetModalOpen(false);
+    setSelectedBouquetTemplate(null);
   };
 
   const handleCloseRestockModal = () => {
@@ -165,6 +223,14 @@ const Inventory = () => {
         onSaved={handleSavedItem}
         onDeleted={handleDeletedItem}
         itemToEdit={selectedItem}
+      />
+      <InventoryBouquetModal
+        isOpen={isBouquetModalOpen}
+        onClose={handleCloseBouquetModal}
+        onSaved={handleSavedBouquetTemplate}
+        onDeleted={handleDeletedBouquetTemplate}
+        templateToEdit={selectedBouquetTemplate}
+        canDelete={session?.user.role === 'ADMIN'}
       />
       <InventoryRestockModal
         isOpen={isRestockModalOpen}
@@ -258,11 +324,19 @@ const Inventory = () => {
 
           {!isLoading && errorMessage ? <div className="inventory-list-placeholder">{errorMessage}</div> : null}
 
-          {!isLoading && !errorMessage && filteredItems.length === 0 ? (
+          {!isLoading && !errorMessage && selectedFilter !== 'Букеты' && filteredItems.length === 0 ? (
             <div className="inventory-list-placeholder">По текущему фильтру товары не найдены.</div>
           ) : null}
 
-          {!isLoading && !errorMessage
+          {!isLoading && selectedFilter === 'Букеты' && templatesErrorMessage ? (
+            <div className="inventory-list-placeholder">{templatesErrorMessage}</div>
+          ) : null}
+
+          {!isLoading && !templatesErrorMessage && selectedFilter === 'Букеты' && filteredBouquetTemplates.length === 0 ? (
+            <div className="inventory-list-placeholder">По текущему фильтру шаблоны букетов не найдены.</div>
+          ) : null}
+
+          {!isLoading && !errorMessage && selectedFilter !== 'Букеты'
             ? filteredItems.map((item) => {
                 const isLowStock = item.quantity < lowStockThreshold;
 
@@ -328,6 +402,62 @@ const Inventory = () => {
                 </button>
               </div>
             </article>
+                );
+              })
+            : null}
+
+          {!isLoading && !templatesErrorMessage && selectedFilter === 'Букеты'
+            ? filteredBouquetTemplates.map((template) => {
+                const bouquetCost = getBouquetCost(template);
+                const ingredientsSummary = getBouquetIngredientsSummary(template);
+
+                return (
+                  <article key={template.id} className="inventory-bouquets-card">
+                    <div className="inventory-bouquets-card-head">
+                      <div className="inventory-bouquets-card-image">
+                        {template.imageUrl ? (
+                          <img src={template.imageUrl} alt={template.name} className="inventory-bouquets-card-image-photo" />
+                        ) : (
+                          <InventoryFallbackIcon className="inventory-bouquets-card-image-icon" />
+                        )}
+                      </div>
+
+                      <div className="inventory-bouquets-card-main">
+                        <h3 className="inventory-bouquets-card-tittle">{template.name}</h3>
+                        <span className="inventory-bouquets-card-category">ШАБЛОН БУКЕТА</span>
+                      </div>
+                    </div>
+
+                    <div className="inventory-bouquets-card-composition">
+                      <span className="inventory-bouquets-card-composition-label">Состав:</span>
+                      <p className="inventory-bouquets-card-composition-text">{ingredientsSummary}</p>
+                    </div>
+
+                    <div className="inventory-bouquets-card-summary">
+                      <div className="inventory-bouquets-card-summary-item">
+                        <span className="inventory-bouquets-card-summary-label">СЕБЕСТОИМОСТЬ</span>
+                        <span className="inventory-bouquets-card-summary-value">{formatNumber(bouquetCost)} сом</span>
+                      </div>
+                      <div className="inventory-bouquets-card-summary-item">
+                        <span className="inventory-bouquets-card-summary-label">ЦЕНА ПРОДАЖИ</span>
+                        <span className="inventory-bouquets-card-summary-value inventory-bouquets-card-summary-value-sale">
+                          {formatNumber(template.price)} сом
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="inventory-bouquets-card-actions">
+                      <button
+                        type="button"
+                        className="inventory-bouquets-card-edit-button"
+                        aria-label={`Изменить шаблон ${template.name}`}
+                        onClick={() => handleOpenBouquetEditModal(template)}
+                      >
+                        <EditIcon className="inventory-bouquets-card-edit-icon" />
+                        Редактировать
+                      </button>
+                    </div>
+                  </article>
                 );
               })
             : null}

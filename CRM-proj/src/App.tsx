@@ -1,12 +1,15 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { useAuth } from './app/useAuth';
 import { appNavigation, defaultRouteByRole } from './app/navigation';
 import Layout from './components/layout/Layout';
+import Analytics from './containers/Analytics/Analytics';
 import Bouquets from './containers/Bouquets/Bouquets';
+import Clients from './containers/Clients/Clients';
 import Inventory from './containers/Inventory/Inventory';
 import Login from './containers/Login/Login';
-import ModulePlaceholder from './containers/ModulePlaceholder/ModulePlaceholder';
 import Pos from './containers/Pos/Pos';
 import type { UserRole } from './types';
 
@@ -49,10 +52,10 @@ const AdminRoutes = () => (
       <Route path="/admin" element={<Layout role="ADMIN" navigation={appNavigation.ADMIN} />}>
       <Route index element={<Navigate to="pos" replace />} />
       <Route path="pos" element={<Pos />} />
-      <Route path="clients" element={<ModulePlaceholder title="Клиентская база" description="Полный доступ к базе клиентов и поводам." />} />
+      <Route path="clients" element={<Clients />} />
       <Route path="bouquets" element={<Bouquets />} />
       <Route path="inventory" element={<Inventory />} />
-      <Route path="analytics" element={<ModulePlaceholder title="Аналитика" description="Дашборд метрик и финансовой сводки." />} />
+      <Route path="analytics" element={<Analytics />} />
     </Route>
   </Route>
 );
@@ -62,7 +65,7 @@ const FloristRoutes = () => (
       <Route path="/florist" element={<Layout role="FLORIST" navigation={appNavigation.FLORIST} />}>
       <Route index element={<Navigate to="pos" replace />} />
       <Route path="pos" element={<Pos />} />
-      <Route path="client-search" element={<ModulePlaceholder title="Поиск клиентов" description="Только быстрый поиск клиента без доступа к полной базе." />} />
+      <Route path="clients" element={<Clients />} />
       <Route path="bouquets" element={<Bouquets />} />
       <Route path="inventory" element={<Inventory />} />
     </Route>
@@ -71,13 +74,25 @@ const FloristRoutes = () => (
 
 const App = () => {
   return (
-    <Routes>
-      <Route path="/" element={<SessionRedirect />} />
-      <Route path="/login" element={<LoginRoute />} />
-      {AdminRoutes()}
-      {FloristRoutes()}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<SessionRedirect />} />
+        <Route path="/login" element={<LoginRoute />} />
+        {AdminRoutes()}
+        {FloristRoutes()}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <ToastContainer
+        position="top-right"
+        autoClose={3200}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="light"
+      />
+    </>
   );
 };
 
