@@ -443,7 +443,12 @@ const Analytics = () => {
           <div ref={financialChartContainer.ref} className="analytics-chart-wrap" aria-label="График финансовой сводки">
             {financialChartContainer.isReady ? (
               <div className="analytics-chart-canvas" style={{ width: `${financialChartWidth}px`, height: '285px' }}>
-                <AreaChart data={chart} margin={{ top: 20, right: 16, left: 0, bottom: 0 }}>
+                <AreaChart
+                  width={financialChartWidth}
+                  height={285}
+                  data={chart}
+                  margin={{ top: 20, right: 16, left: 0, bottom: 0 }}
+                >
                   <defs>
                     <linearGradient id="analytics-revenue-fill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#D4A5D9" stopOpacity={0.3} />
