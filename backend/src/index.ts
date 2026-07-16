@@ -7,6 +7,7 @@ import inventoryRoutes from './routes/inventory';
 import clientRoutes from './routes/clients';
 import ordersRouter from './routes/orders';
 import analyticsRoutes from './routes/analytics';
+import remindersRoutes from './routes/reminders';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/orders', ordersRouter);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/reminders', remindersRoutes);
 
 app.get('/api/status', async (req: Request, res: Response) => {
     try {

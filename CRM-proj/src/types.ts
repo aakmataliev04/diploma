@@ -1,5 +1,5 @@
 export type UserRole = 'ADMIN' | 'FLORIST';
-export type NavigationIcon = 'pos' | 'clients' | 'bouquets' | 'inventory' | 'analytics';
+export type NavigationIcon = 'pos' | 'orders' | 'clients' | 'bouquets' | 'inventory' | 'analytics';
 export type InventoryCategory = 'FLOWER' | 'PACKAGING' | 'ACCESSORY' | 'SERVICE';
 export type BouquetFilter = 'Все' | 'Цветы' | 'Упаковка' | 'Аксессуары';
 export type PosCatalogFilter = 'Все' | 'Букеты' | 'Цветы' | 'Упаковка' | 'Аксессуары' | 'Услуги';
@@ -99,7 +99,81 @@ export interface CreateOrderResponse {
   order: {
     id: number;
     totalPrice: number;
+    discountPercent?: number | null;
+    discountAmount?: number;
+    isBonusOrder?: boolean;
+    loyaltyDiscountAmount?: number;
+    manualDiscountAmount?: number;
   };
+}
+
+export type OrdersApiPeriod = 'today' | 'yesterday' | 'week' | 'month' | 'custom';
+export type OrdersSegment = 'all' | 'anonymous' | 'loyalty';
+
+export interface OrdersSummaryApi {
+  ordersCount: number;
+  revenue: number;
+  averageCheck: number;
+  anonymousCount: number;
+}
+
+export interface OrderListClientApi {
+  id: number;
+  name: string | null;
+  phone: string;
+  ordersCount: number;
+}
+
+export interface OrderCreatedByApi {
+  id: number;
+  name: string;
+  role: string;
+}
+
+export interface OrderListItemLineApi {
+  id: number;
+  quantity: number;
+  priceAtSale: number;
+  itemId: number;
+  item: {
+    id: number;
+    name: string;
+    category: string;
+  };
+}
+
+export interface OrderListBouquetLineApi {
+  id: number;
+  quantity: number;
+  priceAtSale: number;
+  bouquetTemplateId: number;
+  bouquetTemplate: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface OrderListItemApi {
+  id: number;
+  totalPrice: number;
+  source: string;
+  status: string;
+  discountPercent: number | null;
+  discountAmount: number;
+  clientId: number | null;
+  createdById?: number | null;
+  createdAt: string;
+  client: OrderListClientApi | null;
+  createdBy: OrderCreatedByApi | null;
+  items: OrderListItemLineApi[];
+  bouquets: OrderListBouquetLineApi[];
+  positionsCount: number;
+  displayNumber: string;
+}
+
+export interface OrdersListResponse {
+  summary: OrdersSummaryApi;
+  orders: OrderListItemApi[];
 }
 
 export interface ClientsInfoCardData {
@@ -232,4 +306,40 @@ export interface AnalyticsResponse {
   topBouquets: AnalyticsTopBouquetApi[];
   flowers: AnalyticsFlowerApi[];
   sources: AnalyticsSourceApi[];
+}
+
+export type ReminderListFilter = 'all' | 'pending' | 'completed';
+
+export interface ReminderClientApi {
+  id: number;
+  name: string | null;
+  phone: string;
+}
+
+export interface ReminderApi {
+  id: number;
+  note: string;
+  remindAt: string;
+  isCompleted: boolean;
+  createdAt: string;
+  completedAt: string | null;
+  clientId: number;
+  createdById: number | null;
+  client: ReminderClientApi;
+}
+
+export interface CreateReminderPayload {
+  clientId: number;
+  date: string;
+  time: string;
+  note: string;
+}
+
+export interface CreateReminderResponse {
+  message: string;
+  reminder: ReminderApi;
+}
+
+export interface ReminderDueCountResponse {
+  count: number;
 }

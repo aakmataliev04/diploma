@@ -193,6 +193,21 @@
   box-shadow: 0 10px 15px -3px rgba(255, 107, 157, 0.2), 0 4px 6px -4px rgba(255, 107, 157, 0.2);
 }
 
+.clients-reminder-modal-set-btn-active {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.clients-reminder-modal-set-btn-active:hover {
+  filter: brightness(1.03);
+}
+
+.clients-reminder-modal-set-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  filter: none;
+}
+
 @media (max-width: 640px) {
   .clients-reminder-modal-overlay {
     align-items: flex-end;

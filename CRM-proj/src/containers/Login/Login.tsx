@@ -30,7 +30,8 @@ const keypadDigits = keypadRows.flat();
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof AxiosError) {
-    return error.response?.data?.error ?? 'Не удалось выполнить вход.';
+    const payload = error.response?.data as { error?: string } | undefined;
+    return payload?.error ?? 'Не удалось выполнить вход.';
   }
 
   return 'Не удалось выполнить вход.';

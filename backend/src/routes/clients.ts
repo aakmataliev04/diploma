@@ -118,6 +118,34 @@ router.get('/', verifyToken, requireRole('ADMIN'), async (req: AuthRequest, res:
     }
 });
 
+// GET /api/clients/:id — карточка клиента (профиль из центра уведомлений)
+router.get('/:id', verifyToken, requireRole('ADMIN', 'FLORIST'), async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const id = Number(req.params.id);
+
+        if (!Number.isInteger(id) || id <= 0) {
+            res.status(400).json({ error: 'Некорректный id клиента' });
+            return;
+        }
+
+        const client = await prisma.client.findUnique({
+            where: { id },
+            include: {
+                events: true,
+            },
+        });
+
+        if (!client) {
+            res.status(404).json({ error: 'Клиент не найден' });
+            return;
+        }
+
+        res.json(client);
+    } catch (error) {
+        console.error('Ошибка при получении клиента:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
 
 
 

@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { axiosApi } from '../../axiosApi';
 import type {
   BouquetTemplate,
+  ClientApi,
   CreateOrderResponse,
   InventoryItem,
   PosBasketItem,
@@ -25,8 +26,61 @@ import './Pos.css';
 
 const posFilters: PosCatalogFilter[] = ['Все', 'Букеты', 'Цветы', 'Упаковка', 'Аксессуары', 'Услуги'];
 const orderSources: PosOrderSource[] = ['С улицы', 'WhatsApp', 'Instagram', 'Telegram', '2 GIS'];
+const MIN_PHONE_DIGITS_FOR_LOOKUP = 9;
+const LOYALTY_CYCLE = 7;
 
 const formatNumber = (value: number) => new Intl.NumberFormat('ru-RU').format(value);
+
+const getPhoneDigits = (phoneValue: string) => phoneValue.replace(/\D/g, '');
+
+const getLoyaltyProgress = (ordersCount: number) => {
+  if (ordersCount <= 0) {
+    return 0;
+  }
+
+  const remainder = ordersCount % LOYALTY_CYCLE;
+  return remainder === 0 ? LOYALTY_CYCLE : remainder;
+};
+
+/** Сколько заказов осталось до бонусного (включая текущий на кассе). 1 = этот заказ бонусный. */
+const getOrdersUntilBonus = (ordersCount: number) => {
+  const remainder = ordersCount % LOYALTY_CYCLE;
+
+  if (remainder === 0) {
+    return LOYALTY_CYCLE;
+  }
+
+  return LOYALTY_CYCLE - remainder;
+};
+
+const pickBestClientMatch = (clients: ClientApi[], phoneDigits: string): ClientApi | null => {
+  if (clients.length === 0 || phoneDigits.length < MIN_PHONE_DIGITS_FOR_LOOKUP) {
+    return null;
+  }
+
+  const scored = clients
+    .map((client) => {
+      const clientDigits = getPhoneDigits(client.phone);
+
+      if (clientDigits === phoneDigits) {
+        return { client, score: 3 };
+      }
+
+      if (clientDigits.endsWith(phoneDigits) || phoneDigits.endsWith(clientDigits)) {
+        return { client, score: 2 };
+      }
+
+      if (clientDigits.includes(phoneDigits) || phoneDigits.includes(clientDigits)) {
+        return { client, score: 1 };
+      }
+
+      return { client, score: 0 };
+    })
+    .filter((row) => row.score > 0)
+    .sort((left, right) => right.score - left.score);
+
+  return scored[0]?.client ?? null;
+};
 
 const getPhoneCountryFlags = (phoneValue: string) => {
   const normalizedValue = phoneValue.trim();
@@ -88,6 +142,13 @@ const Pos = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [catalogError, setCatalogError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDiscountEnabled, setIsDiscountEnabled] = useState(false);
+  const [discountPercentInput, setDiscountPercentInput] = useState('');
+  const [matchedClient, setMatchedClient] = useState<ClientApi | null>(null);
+  const [isClientLookupLoading, setIsClientLookupLoading] = useState(false);
+  const [hasCompletedClientLookup, setHasCompletedClientLookup] = useState(false);
+  const clientLookupRequestIdRef = useRef(0);
+  const clientNameTouchedRef = useRef(false);
   const deferredSearchValue = useDeferredValue(searchValue);
 
   useEffect(() => {
@@ -143,9 +204,91 @@ const Pos = () => {
     });
   }, [catalogItems, normalizedSearchValue, selectedFilter]);
 
-  const totalPrice = basketItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotalPrice = basketItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalUnits = basketItems.reduce((sum, item) => sum + item.quantity, 0);
   const phoneCountryFlags = getPhoneCountryFlags(phone);
+
+  const parsedDiscountPercent = (() => {
+    if (!isDiscountEnabled || discountPercentInput.trim() === '') {
+      return null;
+    }
+
+    const value = Number(discountPercentInput);
+
+    if (!Number.isInteger(value) || value < 1 || value > 100) {
+      return null;
+    }
+
+    return value;
+  })();
+
+  const manualDiscountAmount =
+    parsedDiscountPercent !== null
+      ? Math.round((subtotalPrice * parsedDiscountPercent) / 100)
+      : 0;
+  const totalPrice = Math.max(0, subtotalPrice - manualDiscountAmount);
+  const phoneDigits = getPhoneDigits(phone);
+  const canLookupClient =
+    !isAnonymousOrder && phoneDigits.length >= MIN_PHONE_DIGITS_FOR_LOOKUP && phone.trim() !== '+996';
+
+  const loyaltyOrdersCount = matchedClient?.ordersCount ?? 0;
+  const loyaltyProgress = matchedClient ? getLoyaltyProgress(loyaltyOrdersCount) : canLookupClient ? 0 : null;
+  const ordersUntilBonus = matchedClient
+    ? getOrdersUntilBonus(loyaltyOrdersCount)
+    : canLookupClient
+      ? LOYALTY_CYCLE
+      : null;
+  const isNextOrderBonus = ordersUntilBonus === 1;
+
+  useEffect(() => {
+    if (isAnonymousOrder || !canLookupClient) {
+      clientLookupRequestIdRef.current += 1;
+      setMatchedClient(null);
+      setIsClientLookupLoading(false);
+      setHasCompletedClientLookup(false);
+      return;
+    }
+
+    const requestId = ++clientLookupRequestIdRef.current;
+    setIsClientLookupLoading(true);
+    setHasCompletedClientLookup(false);
+
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const { data } = await axiosApi.get<ClientApi[]>('/clients/search', {
+            params: { q: phoneDigits },
+          });
+
+          if (requestId !== clientLookupRequestIdRef.current) {
+            return;
+          }
+
+          const bestMatch = pickBestClientMatch(Array.isArray(data) ? data : [], phoneDigits);
+          setMatchedClient(bestMatch);
+
+          if (bestMatch?.name?.trim() && !clientNameTouchedRef.current) {
+            setClientName(bestMatch.name.trim());
+          }
+        } catch {
+          if (requestId !== clientLookupRequestIdRef.current) {
+            return;
+          }
+
+          setMatchedClient(null);
+        } finally {
+          if (requestId === clientLookupRequestIdRef.current) {
+            setIsClientLookupLoading(false);
+            setHasCompletedClientLookup(true);
+          }
+        }
+      })();
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [canLookupClient, isAnonymousOrder, phoneDigits]);
 
   const handlePhoneChange = (rawValue: string) => {
     const sanitizedValue = rawValue
@@ -154,6 +297,8 @@ const Pos = () => {
 
     const maxLength = getMaxPhoneLength(sanitizedValue);
     setPhone(sanitizedValue.slice(0, maxLength));
+    setMatchedClient(null);
+    setHasCompletedClientLookup(false);
   };
 
   const addToBasket = (catalogItem: PosCatalogEntry) => {
@@ -291,6 +436,13 @@ const Pos = () => {
     setClientName('');
     setEventTitle('');
     setEventDate('');
+    setIsDiscountEnabled(false);
+    setDiscountPercentInput('');
+    setMatchedClient(null);
+    setIsClientLookupLoading(false);
+    setHasCompletedClientLookup(false);
+    clientNameTouchedRef.current = false;
+    clientLookupRequestIdRef.current += 1;
   };
 
   const handleSubmitOrder = async () => {
@@ -309,6 +461,22 @@ const Pos = () => {
       }
     }
 
+    if (isDiscountEnabled) {
+      const rawPercent = discountPercentInput.trim();
+
+      if (rawPercent === '') {
+        toast.error('Укажи процент скидки или выключи скидку.');
+        return;
+      }
+
+      const percentValue = Number(rawPercent);
+
+      if (!Number.isInteger(percentValue) || percentValue < 1 || percentValue > 100) {
+        toast.error('Процент скидки должен быть целым числом от 1 до 100.');
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -316,6 +484,8 @@ const Pos = () => {
         source,
         phone: !isAnonymousOrder && phone.trim() ? phone.trim() : undefined,
         name: !isAnonymousOrder && clientName.trim() ? clientName.trim() : undefined,
+        discountPercent:
+          isDiscountEnabled && parsedDiscountPercent !== null ? parsedDiscountPercent : undefined,
         items: basketItems
           .filter((item) => item.type === 'item')
           .map((item) => ({
@@ -445,7 +615,17 @@ const Pos = () => {
                 type="checkbox"
                 className="pos-form-toggle-input"
                 checked={isAnonymousOrder}
-                onChange={(event) => setIsAnonymousOrder(event.target.checked)}
+                onChange={(event) => {
+                  const nextAnonymous = event.target.checked;
+                  setIsAnonymousOrder(nextAnonymous);
+
+                  if (nextAnonymous) {
+                    setMatchedClient(null);
+                    setHasCompletedClientLookup(false);
+                    setIsClientLookupLoading(false);
+                    clientLookupRequestIdRef.current += 1;
+                  }
+                }}
               />
               <span className="pos-form-toggle-track">
                 <span className="pos-form-toggle-thumb" />
@@ -475,7 +655,15 @@ const Pos = () => {
               <section className="pos-form-client">
                 <div className="pos-form-block-header">
                   <h3 className="pos-form-block-title">Данные клиента</h3>
-                  <span className="pos-form-loyalty">Лояльность</span>
+                  <span
+                    className={`pos-form-loyalty${isNextOrderBonus ? ' is-bonus' : ''}${!canLookupClient ? ' is-muted' : ''}`}
+                  >
+                    {isClientLookupLoading
+                      ? '…'
+                      : loyaltyProgress === null
+                        ? 'Лояльность'
+                        : `${loyaltyProgress}/7`}
+                  </span>
                 </div>
 
                 <label className="pos-form-input pos-form-input-number">
@@ -506,9 +694,52 @@ const Pos = () => {
                     className="pos-form-input-field"
                     placeholder="Имя клиента (необязательно)"
                     value={clientName}
-                    onChange={(event) => setClientName(event.target.value)}
+                    onChange={(event) => {
+                      clientNameTouchedRef.current = true;
+                      setClientName(event.target.value);
+                    }}
                   />
                 </label>
+
+                {canLookupClient ? (
+                  <div className="pos-form-loyalty-panel">
+                    {isClientLookupLoading ? (
+                      <p className="pos-form-loyalty-hint">Ищем клиента…</p>
+                    ) : matchedClient ? (
+                      <>
+                        <div className="pos-form-loyalty-dots" aria-hidden="true">
+                          {Array.from({ length: LOYALTY_CYCLE }).map((_, index) => (
+                            <span
+                              key={`loyalty-dot-${index}`}
+                              className={`pos-form-loyalty-dot${index < (loyaltyProgress ?? 0) ? ' is-filled' : ''}`}
+                            />
+                          ))}
+                        </div>
+                        <p className={`pos-form-loyalty-hint${isNextOrderBonus ? ' is-bonus' : ''}`}>
+                          {isNextOrderBonus
+                            ? 'Этот заказ — бонусный (7-й в цикле)'
+                            : ordersUntilBonus === LOYALTY_CYCLE && loyaltyProgress === LOYALTY_CYCLE
+                              ? 'Цикл закрыт · до следующего бонуса 7 заказов'
+                              : `Ещё ${ordersUntilBonus} до бонуса · заказов: ${loyaltyOrdersCount}`}
+                        </p>
+                        <p className="pos-form-loyalty-meta">
+                          ✓ {matchedClient.name?.trim() || `Клиент #${matchedClient.id}`} · {matchedClient.phone}
+                        </p>
+                      </>
+                    ) : hasCompletedClientLookup ? (
+                      <>
+                        <div className="pos-form-loyalty-dots" aria-hidden="true">
+                          {Array.from({ length: LOYALTY_CYCLE }).map((_, index) => (
+                            <span key={`loyalty-dot-new-${index}`} className="pos-form-loyalty-dot" />
+                          ))}
+                        </div>
+                        <p className="pos-form-loyalty-hint">Новый клиент · 0/7 · до бонуса 7 заказов</p>
+                      </>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="pos-form-loyalty-hint is-muted">Введите телефон, чтобы увидеть лояльность</p>
+                )}
               </section>
 
               <section className="pos-form-event">
@@ -627,6 +858,62 @@ const Pos = () => {
         </div>
 
         <div className="pos-form-footer">
+          <div className="pos-form-discount">
+            <button
+              type="button"
+              className={`pos-form-discount-toggle${isDiscountEnabled ? ' is-active' : ''}`}
+              onClick={() => {
+                setIsDiscountEnabled((prev) => {
+                  const next = !prev;
+                  if (!next) {
+                    setDiscountPercentInput('');
+                  }
+                  return next;
+                });
+              }}
+              aria-pressed={isDiscountEnabled}
+            >
+              {isDiscountEnabled ? 'Скидка включена' : 'Включить скидку'}
+            </button>
+
+            {isDiscountEnabled ? (
+              <label className="pos-form-discount-input-wrap">
+                <span className="pos-form-discount-input-label">%</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  step={1}
+                  inputMode="numeric"
+                  className="pos-form-discount-input"
+                  placeholder="—"
+                  value={discountPercentInput}
+                  onChange={(event) => {
+                    const rawValue = event.target.value.replace(/[^\d]/g, '');
+                    if (rawValue === '') {
+                      setDiscountPercentInput('');
+                      return;
+                    }
+                    const nextValue = Math.min(100, Number(rawValue));
+                    setDiscountPercentInput(String(nextValue));
+                  }}
+                  aria-label="Процент скидки"
+                />
+              </label>
+            ) : null}
+          </div>
+
+          {isDiscountEnabled && parsedDiscountPercent !== null && manualDiscountAmount > 0 ? (
+            <div className="pos-form-discount-summary">
+              <span>
+                Скидка {parsedDiscountPercent}% (−{formatNumber(manualDiscountAmount)} KGS)
+              </span>
+              <span className="pos-form-discount-subtotal">
+                Было: {formatNumber(subtotalPrice)} KGS
+              </span>
+            </div>
+          ) : null}
+
           <div className="pos-form-total">
             <span className="pos-form-total-label">К оплате:</span>
             <strong className="pos-form-total-value">{formatNumber(totalPrice)} KGS</strong>

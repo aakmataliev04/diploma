@@ -44,6 +44,21 @@ export const PosIcon = ({ className }: IconProps) => (
   </svg>
 );
 
+export const OrdersIcon = ({ className }: IconProps) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <path
+      d="M4.66669 2H11.3334C11.7016 2 12 2.29848 12 2.66667V13.3333C12 13.7015 11.7016 14 11.3334 14H4.66669C4.2985 14 4.00002 13.7015 4.00002 13.3333V2.66667C4.00002 2.29848 4.2985 2 4.66669 2Z"
+      stroke="currentColor"
+      strokeWidth="1.33333"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path d="M6 5.33334H10" stroke="currentColor" strokeWidth="1.33333" strokeLinecap="round" />
+    <path d="M6 8H10" stroke="currentColor" strokeWidth="1.33333" strokeLinecap="round" />
+    <path d="M6 10.6667H8.66667" stroke="currentColor" strokeWidth="1.33333" strokeLinecap="round" />
+  </svg>
+);
+
 export const ClientsIcon = ({ className }: IconProps) => (
   <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true">
     <path d="M10.6667 14V12.6667C10.6667 11.9594 10.3857 11.2811 9.88562 10.781C9.38552 10.281 8.70724 10 8 10H3.33333C2.62609 10 1.94781 10.281 1.44772 10.781C0.947618 11.2811 0.666668 11.9594 0.666668 12.6667V14" stroke="currentColor" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>

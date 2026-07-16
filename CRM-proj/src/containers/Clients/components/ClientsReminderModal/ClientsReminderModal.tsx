@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+import { axiosApi } from '../../../../axiosApi';
+import type { CreateReminderPayload, CreateReminderResponse } from '../../../../types';
 import {
   ClientCardRemindIcon,
   ClientModalCloseIcon,
@@ -6,19 +9,86 @@ import {
 import './ClientsReminderModal.css';
 
 interface ClientsReminderModalProps {
+  clientId: number | null;
   clientName: string;
   isOpen: boolean;
   onClose: () => void;
+  onCreated?: () => void;
 }
 
-const ClientsReminderModal = ({ clientName, isOpen, onClose }: ClientsReminderModalProps) => {
+const ClientsReminderModal = ({
+  clientId,
+  clientName,
+  isOpen,
+  onClose,
+  onCreated,
+}: ClientsReminderModalProps) => {
   const [dateValue, setDateValue] = useState('');
   const [timeValue, setTimeValue] = useState('');
   const [noteValue, setNoteValue] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setDateValue('');
+    setTimeValue('');
+    setNoteValue('');
+    setIsSubmitting(false);
+  }, [isOpen, clientId]);
 
   if (!isOpen) {
     return null;
   }
+
+  const canSubmit =
+    Boolean(clientId) &&
+    Boolean(dateValue) &&
+    Boolean(timeValue) &&
+    noteValue.trim().length > 0 &&
+    !isSubmitting;
+
+  const handleSubmit = async () => {
+    if (!clientId) {
+      toast.error('Клиент не выбран.');
+      return;
+    }
+
+    if (!dateValue || !timeValue) {
+      toast.error('Укажи дату и время напоминания.');
+      return;
+    }
+
+    if (!noteValue.trim()) {
+      toast.error('Добавь заметку к напоминанию.');
+      return;
+    }
+
+    const payload: CreateReminderPayload = {
+      clientId,
+      date: dateValue,
+      time: timeValue,
+      note: noteValue.trim(),
+    };
+
+    setIsSubmitting(true);
+
+    try {
+      await axiosApi.post<CreateReminderResponse>('/reminders', payload);
+      toast.success('Напоминание установлено');
+      onCreated?.();
+      onClose();
+    } catch (error) {
+      const message =
+        (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Не удалось создать напоминание';
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="clients-reminder-modal-overlay" role="presentation" onClick={onClose}>
@@ -114,15 +184,19 @@ const ClientsReminderModal = ({ clientName, isOpen, onClose }: ClientsReminderMo
             type="button"
             className="clients-reminder-modal-footer-btn clients-reminder-modal-cancel-btn"
             onClick={onClose}
+            disabled={isSubmitting}
           >
             Отмена
           </button>
           <button
             type="button"
-            className="clients-reminder-modal-footer-btn clients-reminder-modal-set-btn"
-            disabled
+            className={`clients-reminder-modal-footer-btn clients-reminder-modal-set-btn${canSubmit ? ' clients-reminder-modal-set-btn-active' : ''}`}
+            disabled={!canSubmit}
+            onClick={() => {
+              void handleSubmit();
+            }}
           >
-            Установить
+            {isSubmitting ? 'Сохранение...' : 'Установить'}
           </button>
         </div>
       </div>

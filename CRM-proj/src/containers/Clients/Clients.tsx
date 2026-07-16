@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { axiosApi } from '../../axiosApi';
 import { useAuth } from '../../app/useAuth';
@@ -163,6 +164,7 @@ const mapClientToListCardData = (client: ClientApi, startOfToday: number, upcomi
 
 const Clients = () => {
   const { session } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isFlorist = session?.user.role === 'FLORIST';
   const [listView, setListView] = useState<ClientsListView>('cards');
   const [listSearch, setListSearch] = useState('');
@@ -358,6 +360,74 @@ const Clients = () => {
     () => allKnownClients.find((client) => client.id === selectedReminderClientId) ?? null,
     [allKnownClients, selectedReminderClientId],
   );
+
+  // Deep-link из центра уведомлений: /clients?clientId=123 → открыть профиль
+  useEffect(() => {
+    const rawClientId = searchParams.get('clientId');
+
+    if (!rawClientId) {
+      return;
+    }
+
+    const clientId = Number(rawClientId);
+
+    if (!Number.isInteger(clientId) || clientId <= 0) {
+      setSearchParams({}, { replace: true });
+      return;
+    }
+
+    let isMounted = true;
+
+    const openClientProfile = async () => {
+      const knownClient = allKnownClients.find((client) => client.id === clientId);
+
+      if (knownClient) {
+        if (isMounted) {
+          setSelectedClientId(clientId);
+          setSearchParams({}, { replace: true });
+        }
+        return;
+      }
+
+      try {
+        const { data } = await axiosApi.get<ClientApi>(`/clients/${clientId}`);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (isFlorist) {
+          setFloristSearchClients((current) => {
+            const withoutCurrent = current.filter((client) => client.id !== data.id);
+            return [data, ...withoutCurrent];
+          });
+        } else {
+          setClients((current) => {
+            if (current.some((client) => client.id === data.id)) {
+              return current;
+            }
+            return [data, ...current];
+          });
+        }
+
+        setSelectedClientId(data.id);
+      } catch {
+        if (isMounted) {
+          toast.error('Не удалось открыть профиль клиента');
+        }
+      } finally {
+        if (isMounted) {
+          setSearchParams({}, { replace: true });
+        }
+      }
+    };
+
+    void openClientProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [searchParams, setSearchParams, allKnownClients, isFlorist]);
 
   const filteredClients = useMemo(() => {
     const searchFilteredItems = clientsListItems.filter((client) => {
@@ -895,6 +965,7 @@ const Clients = () => {
 
         <ClientsReminderModal
           key={selectedReminderClient?.id ?? 'clients-reminder-modal'}
+          clientId={selectedReminderClient?.id ?? null}
           clientName={selectedReminderClient ? getClientDisplayName(selectedReminderClient) : ''}
           isOpen={selectedReminderClient !== null}
           onClose={() => setSelectedReminderClientId(null)}

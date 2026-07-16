@@ -10,6 +10,7 @@ import Bouquets from './containers/Bouquets/Bouquets';
 import Clients from './containers/Clients/Clients';
 import Inventory from './containers/Inventory/Inventory';
 import Login from './containers/Login/Login';
+import Orders from './containers/Orders/Orders';
 import Pos from './containers/Pos/Pos';
 import type { UserRole } from './types';
 
@@ -52,6 +53,7 @@ const AdminRoutes = () => (
       <Route path="/admin" element={<Layout role="ADMIN" navigation={appNavigation.ADMIN} />}>
       <Route index element={<Navigate to="pos" replace />} />
       <Route path="pos" element={<Pos />} />
+      <Route path="orders" element={<Orders />} />
       <Route path="clients" element={<Clients />} />
       <Route path="bouquets" element={<Bouquets />} />
       <Route path="inventory" element={<Inventory />} />
@@ -65,6 +67,7 @@ const FloristRoutes = () => (
       <Route path="/florist" element={<Layout role="FLORIST" navigation={appNavigation.FLORIST} />}>
       <Route index element={<Navigate to="pos" replace />} />
       <Route path="pos" element={<Pos />} />
+      <Route path="orders" element={<Orders />} />
       <Route path="clients" element={<Clients />} />
       <Route path="bouquets" element={<Bouquets />} />
       <Route path="inventory" element={<Inventory />} />

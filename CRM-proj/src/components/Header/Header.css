@@ -105,6 +105,10 @@
   transform: translateY(-1px);
 }
 
+.header-icon-btn.is-active {
+  color: #ff6b9d;
+}
+
 .header-action-icon {
   width: 1.25rem;
   height: 1.25rem;
